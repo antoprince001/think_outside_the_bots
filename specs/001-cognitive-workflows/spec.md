@@ -11,6 +11,19 @@ while using AI to learn. Students bring their own model through API keys and cho
 create cognitive friction before the answer: Feynman technique, Socratic questioning, AI freeze
 window, long draft mode, and custom workflows."
 
+## Clarifications
+
+### Session 2026-07-20
+
+- Q: Which AI providers must v1 support? → A: A library-backed multi-provider layer, including
+  cloud and reachable local models.
+- Q: How should local-model connectivity work? → A: Support only endpoints directly reachable from
+  the student's browser.
+- Q: What learner age and data-collection boundary applies to v1? → A: Learners aged 13+; no
+  personal data collection beyond browser-local study records.
+- Q: How long should prototype study records persist? → A: Keep locally until the student deletes
+  them.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Complete a Guided Learning Task (Priority: P1)
@@ -118,7 +131,9 @@ draft, and can save, select, and run a custom workflow whose gates are enforced.
 - **FR-009**: The system MUST enforce the selected workflow's gates and clearly state why an AI
   action is unavailable and what the student must do next.
 - **FR-010**: The system MUST allow a student to add, label, test, select, and remove their personal
-  AI model connections using provider API keys.
+  AI model connections using a browser-compatible multi-provider model library. The first release
+  MUST support supported cloud providers and local-model endpoints directly reachable from the
+  student's browser; it MUST report browser-reachability failures clearly.
 - **FR-011**: The system MUST protect saved API keys from display after saving and MUST allow a
   student to replace or remove a key at any time.
 - **FR-012**: Before a session uses a selected model, the system MUST disclose that the selected
@@ -128,6 +143,10 @@ draft, and can save, select, and run a custom workflow whose gates are enforced.
 - **FR-014**: The system MUST retain an ordered session record containing the student's task,
   workflow, learner contributions, AI feedback, gate events, and final outcome for the student to
   review.
+- **FR-016**: The system MUST target learners aged 13 and older and MUST NOT collect personal
+  profile data or transmit study records to application-owned services.
+- **FR-017**: The prototype MUST retain browser-local tasks, workflows, and session records until
+  the student explicitly deletes them.
 - **FR-015**: The system MUST allow a student to receive the final answer only when the chosen
   workflow permits it; workflows may intentionally finish without a final answer.
 
@@ -181,7 +200,13 @@ draft, and can save, select, and run a custom workflow whose gates are enforced.
 
 - The first release serves individual students; shared classrooms, instructor controls, and
   collaborative tasks are out of scope.
+- The first release is for learners aged 13 and older. Study records remain browser-local; the app
+  has no application-owned account, profile, or server-side learning-record store.
 - Students are responsible for having an account with, and access to, any AI provider they connect.
+- The application uses a browser-compatible multi-provider model library (such as LangChain.js) so
+  supported cloud providers and reachable local-model endpoints can share one connection workflow.
+  A local endpoint must be reachable from the student's browser; the app does not run a local model
+  runtime itself.
 - The first release supports the four named prebuilt workflows and custom workflows composed only
   from the supported workflow steps; arbitrary scripts or third-party workflow sharing are out of
   scope.

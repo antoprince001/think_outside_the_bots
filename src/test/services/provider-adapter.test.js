@@ -1,0 +1,3 @@
+import { expect, it, vi } from 'vitest';
+import { requestFeedback } from '../../services/provider-adapter';
+it('sends provider feedback only with a supplied key', async () => { global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ choices: [{ message: { content: 'Question?' } }] }) }); const result = await requestFeedback({ connection: { model: 'gpt-4.1-mini' }, key: 'secret', task: 'Task', workflow: { id: 'socratic' }, contributions: [{ body: 'Reasoning' }] }); expect(result.content).toBe('Question?'); expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer secret'); });
