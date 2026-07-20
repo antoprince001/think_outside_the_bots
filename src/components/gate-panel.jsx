@@ -1,0 +1,79 @@
+import { Timer } from 'lucide-react';
+import { remaining } from '../workflows/session-machine';
+
+function formatCountdown(secondsLeft) {
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = String(secondsLeft % 60).padStart(2, '0');
+  return `${minutes}:${seconds} remaining`;
+}
+
+function actionLabel({ step, isLocked, secondsLeft }) {
+  if (isLocked) return formatCountdown(secondsLeft);
+  if (step?.type === 'ai_feedback') return 'Get feedback';
+  if (step?.type === 'final_answer') return 'Unlock worked explanation';
+  return 'Submit my thinking';
+}
+
+/**
+ * Renders the current workflow step: a drafting textarea for contribution
+ * and freeze steps, a text (non-color) countdown while frozen, any
+ * received AI feedback, and the single primary action for this step.
+ *
+ * Freeze time is derived from `session.freezeStartedAt` (a persisted
+ * wall-clock timestamp) rather than a live in-memory countdown, so a
+ * reload cannot shorten the enforced wait — see workflows/session-machine.js.
+ */
+export function GatePanel({ session, step, draft, onDraftChange, feedback, now, onAction }) {
+  const isFreezeStep = step?.type === 'freeze';
+  const secondsLeft = isFreezeStep
+    ? remaining(step, session.freezeStartedAt || session.startedAt, now)
+    : 0;
+  const isLocked = isFreezeStep && secondsLeft > 0;
+  const showsDraftArea = step?.type === 'contribution' || isFreezeStep;
+  const charactersRemaining = step?.minCharacters
+    ? Math.max(0, step.minCharacters - draft.trim().length)
+    : null;
+  const isBelowMinimum = step?.type === 'contribution' && draft.trim().length < step.minCharacters;
+
+  return (
+    <>
+      {isFreezeStep && (
+        <p className="timer" role="status">
+          <Timer size={18} />
+          {formatCountdown(secondsLeft)} — keep drafting; AI stays paused.
+        </p>
+      )}
+
+      {showsDraftArea && (
+        <>
+          <textarea
+            value={draft}
+            onChange={(event) => onDraftChange(event.target.value)}
+            placeholder="Write what you think…"
+            maxLength={10000}
+          />
+          <p className="hint">
+            {charactersRemaining !== null
+              ? `${charactersRemaining} characters until feedback can unlock.`
+              : 'Your draft is saved locally.'}
+          </p>
+        </>
+      )}
+
+      {feedback && (
+        <article className="feedback">
+          <b>AI feedback</b>
+          <p>{feedback}</p>
+        </article>
+      )}
+
+      {session.status === 'recoverable_error' && (
+        <p className="error">Your work is safe. Retry or choose another model.</p>
+      )}
+
+      <button type="button" className="primary" disabled={isBelowMinimum || isLocked} onClick={onAction}>
+        {actionLabel({ step, isLocked, secondsLeft })}
+      </button>
+    </>
+  );
+}

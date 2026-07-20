@@ -1,13 +1,14 @@
 {
   "name": "think-outside-the-bots",
-  "version": "1.0.0",
+  "private": true,
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "lint": "oxlint",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -17,10 +18,16 @@
     "lucide-react": "latest"
   },
   "devDependencies": {
+    "@testing-library/dom": "latest",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "latest",
     "jsdom": "latest",
+    "oxlint": "latest",
+    "vite": "latest",
     "vitest": "latest"
   }
 }

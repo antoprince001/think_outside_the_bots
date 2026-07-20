@@ -1,34 +1,114 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Brain, KeyRound, Lock, Plus, Send, Timer, Trash2 } from 'lucide-react';
+import { Brain, KeyRound, Plus } from 'lucide-react';
+import { ModelConnections } from './components/model-connections';
+import { SessionReview } from './components/session-review';
+import { SessionShell } from './components/session-shell';
+import { TaskSetup } from './components/task-setup';
+import { WorkflowBuilder } from './components/workflow-builder';
+import { getKey } from './services/credential-store';
 import { load, update } from './services/local-store';
-import { getKey, maskKey, removeKey, saveKey } from './services/credential-store';
-import { PROVIDERS, requestFeedback, testConnection } from './services/provider-adapter';
+import { createSession } from './workflows/session-machine';
 import { presets } from './workflows/presets';
-import { validateWorkflow } from './workflows/validate-workflow';
-import { advance, createSession, currentStep, remaining, submit } from './workflows/session-machine';
 import './styles.css';
 
-const uid = () => crypto.randomUUID();
-function App() {
-  const [store, setStore] = useState(load); const [task, setTask] = useState(''); const [selected, setSelected] = useState('feynman');
-  const [session, setSession] = useState(null); const [draft, setDraft] = useState(''); const [feedback, setFeedback] = useState(''); const [now, setNow] = useState(Date.now()); const [showConnections, setShowConnections] = useState(false); const [showBuilder, setShowBuilder] = useState(false);
-  useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i); }, []);
-  const workflows = useMemo(() => [...presets, ...store.workflows], [store]); const workflow = workflows.find(w => w.id === selected) || presets[0];
-  const connection = store.connections.find(c => c.id === store.selectedConnection);
-  const persist = fn => setStore(update(fn));
-  const start = () => { if (!task.trim() || !connection || !getKey(connection.id)) return; const next = createSession({ task: task.trim(), workflow, connection }); persist(d => d.sessions.unshift(next)); setSession(next); setDraft(''); setFeedback(''); };
-  const saveSession = next => { setSession(next); persist(d => { const i = d.sessions.findIndex(s => s.id === next.id); if (i >= 0) d.sessions[i] = next; }); };
-  const proceed = async () => { const step = currentStep(session); if (step.type === 'freeze') { if (remaining(step, session.freezeStartedAt || session.startedAt, now) > 0) return; return saveSession(advance(session)); } if (step.type === 'contribution') return saveSession(submit(session, draft)); if (step.type === 'ai_feedback') { try { const c = store.connections.find(x => x.id === session.modelSnapshot.id); const result = await requestFeedback({ connection: c, key: getKey(c?.id), task: session.task, workflow: session.workflowSnapshot, contributions: session.contributions }); setFeedback(result.content); saveSession(advance(session)); } catch { saveSession({ ...session, status: 'recoverable_error' }); } return; } if (step.type === 'final_answer') { setFeedback('A worked explanation is now available because you built your own path first. Compare it to your reasoning and note one improvement.'); saveSession({ ...advance(session), status: 'complete' }); } };
-  return <div className="app-shell"><header><div className="brand"><Brain size={20}/> outside.bots</div><nav><button onClick={() => setShowConnections(!showConnections)}><KeyRound size={16}/> Models</button><button onClick={() => setShowBuilder(!showBuilder)}><Plus size={16}/> Custom workflow</button></nav></header><main>
-    {showConnections && <Connections store={store} persist={persist} />}{showBuilder && <Builder persist={persist} onSaved={w => { setSelected(w.id); setShowBuilder(false); }} />}
-    {!session ? <section className="setup"><span className="eyebrow">LEARN BEFORE YOU ASK</span><h1>Build your conviction<br/><em>before the answer.</em></h1><p>Choose a workflow that creates useful friction, then let AI respond to your thinking.</p><textarea aria-label="Learning task" value={task} onChange={e => setTask(e.target.value)} placeholder="What are you working through?" maxLength="5000" />
-      <h2>Pick your path</h2><div className="mode-grid">{workflows.map(w => <button key={w.id} className={'mode-card ' + (selected === w.id ? 'selected' : '')} onClick={() => setSelected(w.id)}><strong>{w.name}</strong><span>{w.description}</span></button>)}</div>
-      <div className="notice"><Lock size={16}/> Your selected provider receives only the task and work needed for feedback. Your API key stays in this browser session.</div><button className="primary" disabled={!task.trim() || !connection || !getKey(connection.id)} onClick={start}>Start learning <Send size={16}/></button>{!connection && <p className="hint">Add and test a model connection to begin.</p>}</section>
-    : <Session session={session} step={currentStep(session)} draft={draft} setDraft={setDraft} feedback={feedback} now={now} proceed={proceed} onExit={() => setSession(null)} />}
-  </main></div>;
+const CLOCK_TICK_MS = 1000;
+
+function useClock() {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const intervalId = setInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+    return () => clearInterval(intervalId);
+  }, []);
+  return now;
 }
-function Connections({ store, persist }) { const [label, setLabel] = useState('My OpenAI model'); const [model, setModel] = useState('gpt-4.1-mini'); const [key, setKey] = useState(''); const add = async () => { const c = { id: uid(), label: label.trim(), provider: 'openai', model, status: 'untested', createdAt: new Date().toISOString() }; const tested = await testConnection(c, key); if (tested.status !== 'valid') return; saveKey(c.id, key); persist(d => { c.status = 'valid'; d.connections.push(c); d.selectedConnection = c.id; }); setKey(''); }; return <section className="panel"><h2>Your models</h2><p>Keys are session-only and are never saved with your learning history.</p>{store.connections.map(c => <div className="row" key={c.id}><span><b>{c.label}</b> · {c.model} · {maskKey(getKey(c.id))}</span><button onClick={() => persist(d => d.selectedConnection = c.id)}>Use</button><button onClick={() => { removeKey(c.id); persist(d => d.connections = d.connections.filter(x => x.id !== c.id)); }} aria-label="Remove connection"><Trash2 size={15}/></button></div>)}<input value={label} onChange={e => setLabel(e.target.value)} aria-label="Connection label"/><select value={model} onChange={e => setModel(e.target.value)}>{PROVIDERS[0].models.map(m => <option key={m}>{m}</option>)}</select><input type="password" value={key} onChange={e => setKey(e.target.value)} placeholder="API key" aria-label="API key"/><button className="primary" onClick={add}>Test and save locally</button></section>; }
-function Builder({ persist, onSaved }) { const [name, setName] = useState('My study workflow'); const [minimum, setMinimum] = useState(200); const workflow = { id: uid(), name, kind: 'custom', description: 'Your saved cognitive-friction workflow.', finalAnswerPolicy: 'allowed', steps: [{ id: 'draft', type: 'contribution', prompt: 'Write your first attempt.', minCharacters: Number(minimum) }, { id: 'feedback', type: 'ai_feedback', feedbackMode: 'draft_feedback' }, { id: 'answer', type: 'final_answer' }] }; const errors = validateWorkflow(workflow); return <section className="panel"><h2>Create a mode</h2><input value={name} onChange={e => setName(e.target.value)} aria-label="Workflow name"/><label>Minimum draft characters <input type="number" min="1" max="10000" value={minimum} onChange={e => setMinimum(e.target.value)} /></label><p>Sequence: learner draft → AI feedback → optional final answer</p>{errors.map(e => <p className="error" key={e}>{e}</p>)}<button className="primary" disabled={errors.length} onClick={() => { persist(d => d.workflows.push(workflow)); onSaved(workflow); }}>Save workflow</button></section>; }
-function Session({ session, step, draft, setDraft, feedback, now, proceed, onExit }) { const frozen = step?.type === 'freeze'; const secs = frozen ? remaining(step, session.freezeStartedAt || session.startedAt, now) : 0; const locked = frozen && secs > 0; const label = locked ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')} remaining` : step?.type === 'ai_feedback' ? 'Get feedback' : step?.type === 'final_answer' ? 'Unlock worked explanation' : 'Submit my thinking'; return <section className="session"><button className="link" onClick={onExit}>Exit — work is saved</button><span className="eyebrow">{session.workflowSnapshot.name} · Step {Math.min(session.currentStepIndex + 1, session.workflowSnapshot.steps.length)} of {session.workflowSnapshot.steps.length}</span><h1>{step?.prompt || 'You built a path.'}</h1>{frozen && <p className="timer" role="status"><Timer size={18}/>{label} — keep drafting; AI stays paused.</p>}{step?.type === 'contribution' || frozen ? <><textarea value={draft} onChange={e => setDraft(e.target.value)} placeholder="Write what you think…" maxLength="10000"/><p className="hint">{step?.minCharacters ? `${Math.max(0, step.minCharacters - draft.trim().length)} characters until feedback can unlock.` : 'Your draft is saved locally.'}</p></> : null}{feedback && <article className="feedback"><b>AI feedback</b><p>{feedback}</p></article>}{session.status === 'recoverable_error' && <p className="error">Your work is safe. Retry or choose another model.</p>}<button className="primary" disabled={(step?.type === 'contribution' && draft.trim().length < step.minCharacters) || locked} onClick={proceed}>{label}</button></section>; }
-createRoot(document.getElementById('root')).render(<App/>);
+
+function App() {
+  const [store, setStore] = useState(load);
+  const [task, setTask] = useState('');
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState(presets[0].id);
+  const [session, setSession] = useState(null);
+  const [showConnections, setShowConnections] = useState(false);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const now = useClock();
+
+  const workflows = useMemo(() => [...presets, ...store.workflows], [store.workflows]);
+  const selectedWorkflow = workflows.find((w) => w.id === selectedWorkflowId) ?? presets[0];
+  const selectedConnection = store.connections.find((c) => c.id === store.selectedConnection);
+  const hasReadyConnection = Boolean(selectedConnection && getKey(selectedConnection.id));
+
+  const persist = (mutator) => setStore(update(mutator));
+
+  function saveSession(nextSession) {
+    setSession(nextSession);
+    persist((draft) => {
+      const index = draft.sessions.findIndex((s) => s.id === nextSession.id);
+      if (index >= 0) draft.sessions[index] = nextSession;
+    });
+  }
+
+  function startSession() {
+    if (!task.trim() || !hasReadyConnection) return;
+    const newSession = createSession({
+      task: task.trim(),
+      workflow: selectedWorkflow,
+      connection: selectedConnection,
+    });
+    persist((draft) => draft.sessions.unshift(newSession));
+    setSession(newSession);
+  }
+
+  function handleWorkflowSaved(workflow) {
+    setSelectedWorkflowId(workflow.id);
+    setShowBuilder(false);
+  }
+
+  return (
+    <div className="app-shell">
+      <header>
+        <div className="brand">
+          <Brain size={20} /> Think Outside The Bots
+        </div>
+        <nav>
+          <button type="button" onClick={() => setShowConnections((open) => !open)}>
+            <KeyRound size={16} /> Models
+          </button>
+          <button type="button" onClick={() => setShowBuilder((open) => !open)}>
+            <Plus size={16} /> Custom workflow
+          </button>
+        </nav>
+      </header>
+
+      <main>
+        {showConnections && <ModelConnections store={store} persist={persist} />}
+        {showBuilder && <WorkflowBuilder persist={persist} onSaved={handleWorkflowSaved} />}
+
+        {!session && (
+          <TaskSetup
+            task={task}
+            onTaskChange={setTask}
+            workflows={workflows}
+            selectedWorkflowId={selectedWorkflowId}
+            onSelectWorkflow={setSelectedWorkflowId}
+            hasReadyConnection={hasReadyConnection}
+            onStart={startSession}
+          />
+        )}
+
+        {session && session.status !== 'complete' && (
+          <SessionShell
+            session={session}
+            onSessionChange={saveSession}
+            connections={store.connections}
+            now={now}
+            onExit={() => setSession(null)}
+          />
+        )}
+
+        {session && session.status === 'complete' && <SessionReview session={session} />}
+      </main>
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(<App />);
