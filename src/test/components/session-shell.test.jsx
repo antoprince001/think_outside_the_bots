@@ -11,12 +11,12 @@ const socratic = presets.find((p) => p.id === 'socratic');
 
 const connection = { id: 'conn-1', label: 'Test model', provider: 'openai', model: 'gpt-4.1-mini' };
 
-function renderShell(session, onSessionChange = vi.fn()) {
+function renderShell(session, onSessionChange = vi.fn(), availableConnections = [connection]) {
   render(
     <SessionShell
       session={session}
       onSessionChange={onSessionChange}
-      connections={[connection]}
+      connections={availableConnections}
       now={Date.now()}
       onExit={vi.fn()}
     />
@@ -60,6 +60,24 @@ describe('SessionShell', () => {
     await waitFor(() => {
       expect(screen.getByText(/consider explaining the base case/i)).toBeInTheDocument();
     });
+  });
+
+  it('requests feedback using the Google provider from the session snapshot', async () => {
+    const googleConnection = { id: 'google-1', label: 'Gemini', provider: 'google', model: 'gemini-2.5-flash' };
+    vi.spyOn(providerAdapter, 'requestFeedback').mockResolvedValue({
+      kind: 'feedback',
+      content: 'Google feedback',
+    });
+    let session = createSession({ task: 'x', workflow: feynman, connection: googleConnection });
+    session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(150) }] };
+    renderShell(session, vi.fn(), [googleConnection]);
+
+    fireEvent.click(screen.getByRole('button', { name: /get feedback/i }));
+
+    await waitFor(() => expect(providerAdapter.requestFeedback).toHaveBeenCalledWith(expect.objectContaining({
+      connection: googleConnection,
+      key: 'sk-test',
+    })));
   });
 
   it('never provides a direct solution before the Socratic completion rule is met', () => {

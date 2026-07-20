@@ -16,6 +16,7 @@ function renderConnections(store = emptyStore()) {
 
 describe('ModelConnections', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.spyOn(credentialStore, 'saveKey').mockImplementation(() => {});
     vi.spyOn(credentialStore, 'removeKey').mockImplementation(() => {});
     vi.spyOn(credentialStore, 'getKey').mockReturnValue('sk-existing1234');
@@ -32,6 +33,23 @@ describe('ModelConnections', () => {
       expect(credentialStore.saveKey).toHaveBeenCalledWith(expect.any(String), 'sk-abc123456789');
     });
     expect(persist).toHaveBeenCalled();
+  });
+
+  it('allows selecting Google Gemini and saves its model provider', async () => {
+    vi.spyOn(providerAdapter, 'testConnection').mockResolvedValue({ status: 'valid' });
+    const { persist } = renderConnections();
+
+    fireEvent.change(screen.getByLabelText('Provider'), { target: { value: 'google' } });
+    expect(screen.getByLabelText('Model')).toHaveValue('gemini-2.5-flash');
+    fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'google-key' } });
+    fireEvent.click(screen.getByRole('button', { name: /test and save locally/i }));
+
+    await waitFor(() => expect(persist).toHaveBeenCalled());
+    expect(persist.mock.calls[0][0]).toBeTypeOf('function');
+    expect(providerAdapter.testConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'google', model: 'gemini-2.5-flash' }),
+      'google-key',
+    );
   });
 
   it('shows a verification error and does not save a key for an invalid connection', async () => {

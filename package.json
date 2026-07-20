@@ -11,11 +11,14 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.18",
+    "@ai-sdk/openai": "^2.0.0",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "ai": "^7.0.31",
+    "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "lucide-react": "latest"
+    "vite": "latest"
   },
   "devDependencies": {
     "@testing-library/dom": "latest",

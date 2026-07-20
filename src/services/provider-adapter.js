@@ -3,8 +3,13 @@
 // the student's browser to the provider — never through an application
 // backend — and failures are mapped to generic, key-free messages.
 
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createGoogle } from '@ai-sdk/google';
+
 export const PROVIDERS = [
-  { id: 'openai', label: 'OpenAI', models: ['gpt-4.1-mini', 'gpt-4.1'] },
+  { id: 'openai', label: 'OpenAI', models: ['gpt-5.4-mini', 'gpt-5.4'] },
+  { id: 'google', label: 'Google Gemini', models: ['gemini-2.5-flash'] },
 ];
 
 const FEEDBACK_INSTRUCTIONS = {
@@ -17,6 +22,11 @@ const FEEDBACK_INSTRUCTIONS = {
 
 function instructionFor(workflowId) {
   return FEEDBACK_INSTRUCTIONS[workflowId] ?? FEEDBACK_INSTRUCTIONS.default;
+}
+
+function providerIdFor(connection) {
+  if (connection?.provider) return connection.provider;
+  return PROVIDERS.find((provider) => provider.models.includes(connection?.model))?.id;
 }
 
 export async function testConnection(_connection, key) {
@@ -33,32 +43,44 @@ export async function requestFeedback({ connection, key, task, workflow, contrib
 
   const latestContribution = contributions.at(-1)?.body ?? '';
   const instruction = instructionFor(workflow.id);
+  const providerId = providerIdFor(connection);
+  console.log('Inside requestFeedback')
+  try {
+    let result;
+    if (providerId === 'openai') {
+      const openai = createOpenAI({ apiKey: key });
+      result = await generateText({
+        model: openai(connection.model),
+        system: instruction,
+        prompt: `Task: ${task}\nStudent work: ${latestContribution}`,
+        maxOutputTokens: 300,
+      });
+    } else if (providerId === 'google') {
+        console.log('Inside google requestFeedback')
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: connection.model,
-      messages: [
-        { role: 'system', content: instruction },
-        { role: 'user', content: `Task: ${task}\nStudent work: ${latestContribution}` },
-      ],
-      max_tokens: 300,
-    }),
-  });
+      const google = createGoogle({ apiKey: key });
+      // result = await generateText({
+      //   model: google(connection.model),
+      //   system: instruction,
+      //   prompt: `Task: ${task}\nStudent work: ${latestContribution}`,
+      //   maxOutputTokens: 300,
+      // });
+      result = await generateText({
+        model: google('gemini-2.5-flash'),
+        prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+      });
+    } else {
+      console.log('Unsuported provider')
+      throw new Error('Unsupported provider.');
+    }
 
-  if (!response.ok) {
+    const content = result.text?.trim();
+    if (!content) {
+      throw new Error('Provider returned no feedback.');
+    }
+
+    return { kind: workflow.id === 'socratic' ? 'question' : 'feedback', content };
+  } catch {
     throw new Error('Provider request failed.');
   }
-
-  const payload = await response.json();
-  const content = payload.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error('Provider returned no feedback.');
-  }
-
-  return { kind: workflow.id === 'socratic' ? 'question' : 'feedback', content };
 }

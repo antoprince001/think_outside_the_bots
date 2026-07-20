@@ -26,11 +26,16 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
     : 0;
 
   async function requestAiFeedback() {
-    const connection = connections.find((c) => c.id === session.modelSnapshot?.id);
+    // The session snapshot is the source of truth for the selected model. The
+    // live connection can be absent after a local-store refresh or deletion,
+    // but it still contains everything the adapter needs to construct a model.
+    const connection = connections.find((c) => c.id === session.modelSnapshot?.id)
+      ?? session.modelSnapshot;
+    const connectionId = session.modelSnapshot?.id ?? connection?.id;
     try {
       const result = await requestFeedback({
         connection,
-        key: getKey(connection?.id),
+        key: getKey(connectionId),
         task: session.task,
         workflow: session.workflowSnapshot,
         contributions: session.contributions,

@@ -13,16 +13,25 @@ const DEFAULT_PROVIDER = PROVIDERS[0];
  */
 export function ModelConnections({ store, persist }) {
   const [label, setLabel] = useState('My OpenAI model');
-  const [model, setModel] = useState(DEFAULT_PROVIDER.models[0]);
+  const [providerId, setProviderId] = useState(DEFAULT_PROVIDER.id);
+  const [model, setModel] = useState(DEFAULT_PROVIDER.models[1]);
   const [key, setKey] = useState('');
   const [error, setError] = useState('');
+  const selectedProvider = PROVIDERS.find((provider) => provider.id === providerId) ?? DEFAULT_PROVIDER;
+
+  function handleProviderChange(event) {
+    const nextProvider = PROVIDERS.find((provider) => provider.id === event.target.value) ?? DEFAULT_PROVIDER;
+    setProviderId(nextProvider.id);
+    setModel(nextProvider.models[0]);
+    setLabel(`My ${nextProvider.label} model`);
+  }
 
   async function handleAddConnection() {
     setError('');
     const connection = {
       id: uid(),
       label: label.trim() || 'Untitled connection',
-      provider: DEFAULT_PROVIDER.id,
+      provider: selectedProvider.id,
       model,
       status: 'untested',
       createdAt: new Date().toISOString(),
@@ -84,8 +93,13 @@ export function ModelConnections({ store, persist }) {
         onChange={(event) => setLabel(event.target.value)}
         aria-label="Connection label"
       />
+      <select value={providerId} onChange={handleProviderChange} aria-label="Provider">
+        {PROVIDERS.map((provider) => (
+          <option key={provider.id} value={provider.id}>{provider.label}</option>
+        ))}
+      </select>
       <select value={model} onChange={(event) => setModel(event.target.value)} aria-label="Model">
-        {DEFAULT_PROVIDER.models.map((modelOption) => (
+        {selectedProvider.models.map((modelOption) => (
           <option key={modelOption}>{modelOption}</option>
         ))}
       </select>

@@ -1,22 +1,35 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const { generateText, createOpenAI, createGoogle } = vi.hoisted(() => ({
+  generateText: vi.fn(),
+  createOpenAI: vi.fn((options) => (model) => ({ ...options, model })),
+  createGoogle: vi.fn((options) => (model) => ({ ...options, model })),
+}));
+
+vi.mock('ai', () => ({ generateText }));
+vi.mock('@ai-sdk/openai', () => ({ createOpenAI }));
+vi.mock('@ai-sdk/google', () => ({ createGoogle }));
+
 import { testConnection, requestFeedback, PROVIDERS } from '../../services/provider-adapter';
 
 describe('provider-adapter', () => {
   beforeEach(() => {
-    global.fetch = vi.fn();
+    generateText.mockReset();
+    createOpenAI.mockClear();
+    createGoogle.mockClear();
   });
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
   it('only exposes allow-listed providers', () => {
-    expect(PROVIDERS.map((p) => p.id)).toEqual(['openai']);
+    expect(PROVIDERS.map((p) => p.id)).toEqual(['openai', 'google']);
   });
 
   it('testConnection rejects an empty key without a network call', async () => {
     const result = await testConnection({ id: '1' }, '');
     expect(result.status).toBe('invalid');
-    expect(fetch).not.toHaveBeenCalled();
+    expect(generateText).not.toHaveBeenCalled();
   });
 
   it('testConnection accepts a non-empty key', async () => {
@@ -28,16 +41,13 @@ describe('provider-adapter', () => {
     await expect(
       requestFeedback({ connection: {}, key: null, task: 't', workflow: { id: 'feynman' }, contributions: [] })
     ).rejects.toThrow('Model key is unavailable.');
-    expect(fetch).not.toHaveBeenCalled();
+    expect(generateText).not.toHaveBeenCalled();
   });
 
   it('returns mocked feedback content on a successful response', async () => {
-    fetch.mockResolvedValue({
-      ok: true,
-      json: async () => ({ choices: [{ message: { content: 'Here is a gap to consider.' } }] }),
-    });
+    generateText.mockResolvedValue({ text: 'Here is a gap to consider.' });
     const result = await requestFeedback({
-      connection: { model: 'gpt-4.1-mini' },
+      connection: { provider: 'openai', model: 'gpt-4.1-mini' },
       key: 'sk-test',
       task: 'Explain recursion',
       workflow: { id: 'feynman' },
@@ -45,18 +55,59 @@ describe('provider-adapter', () => {
     });
     expect(result.kind).toBe('feedback');
     expect(result.content).toBe('Here is a gap to consider.');
+    expect(createOpenAI).toHaveBeenCalledWith({ apiKey: 'sk-test' });
+    expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
+      model: { apiKey: 'sk-test', model: 'gpt-4.1-mini' },
+      maxOutputTokens: 300,
+    }));
   });
 
   it('maps a failed request to a generic safe error, never leaking the key', async () => {
-    fetch.mockResolvedValue({ ok: false });
+    generateText.mockRejectedValue(new Error('secret provider details sk-secret'));
     await expect(
       requestFeedback({
-        connection: { model: 'gpt-4.1-mini' },
+        connection: { provider: 'openai', model: 'gpt-4.1-mini' },
         key: 'sk-secret',
         task: 't',
         workflow: { id: 'socratic' },
         contributions: [{ body: 'x' }],
       })
     ).rejects.toThrow('Provider request failed.');
+  });
+
+  it('uses the Google provider for Google connections', async () => {
+    generateText.mockResolvedValue({ text: 'Try checking the base case.' });
+
+    const result = await requestFeedback({
+      connection: { provider: 'google', model: 'gemini-2.5-flash' },
+      key: 'google-secret',
+      task: 'Explain recursion',
+      workflow: { id: 'feynman' },
+      contributions: [{ body: 'My explanation' }],
+    });
+
+    expect(result.content).toBe('Try checking the base case.');
+    expect(createGoogle).toHaveBeenCalledWith({ apiKey: 'google-secret' });
+    expect(createOpenAI).not.toHaveBeenCalled();
+    expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
+      model: { apiKey: 'google-secret', model: 'gemini-2.5-flash' },
+    }));
+  });
+
+  it('infers Google provider for older saved Gemini connections without provider metadata', async () => {
+    generateText.mockResolvedValue({ text: 'Try naming the missing assumption.' });
+
+    await requestFeedback({
+      connection: { model: 'gemini-2.5-flash' },
+      key: 'google-secret',
+      task: 'Explain recursion',
+      workflow: { id: 'feynman' },
+      contributions: [{ body: 'My explanation' }],
+    });
+
+    expect(createGoogle).toHaveBeenCalledWith({ apiKey: 'google-secret' });
+    expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
+      model: { apiKey: 'google-secret', model: 'gemini-2.5-flash' },
+    }));
   });
 });
