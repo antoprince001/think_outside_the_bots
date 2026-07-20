@@ -1,0 +1,6 @@
+const id = () => crypto.randomUUID();
+export function createSession({ task, workflow, connection }) { return { id: id(), task, workflowSnapshot: structuredClone(workflow), modelSnapshot: { id: connection.id, label: connection.label, provider: connection.provider, model: connection.model }, currentStepIndex: 0, status: 'active', contributions: [], events: [{ type: 'session_created', at: Date.now() }], startedAt: Date.now() }; }
+export const currentStep = session => session.workflowSnapshot.steps[session.currentStepIndex];
+export function remaining(step, startedAt, now = Date.now()) { return Math.max(0, step.durationSeconds - Math.floor((now - startedAt) / 1000)); }
+export function submit(session, body) { const step = currentStep(session); if (step.type !== 'contribution' || body.trim().length < step.minCharacters) return { ...session, message: `Write ${Math.max(0, step.minCharacters - body.trim().length)} more characters.` }; const contributions = [...session.contributions, { id: id(), stepId: step.id, body: body.trim(), at: Date.now() }]; return { ...session, contributions, currentStepIndex: session.currentStepIndex + 1, events: [...session.events, { type: 'contribution_submitted', at: Date.now(), body: body.trim() }] }; }
+export function advance(session) { return { ...session, currentStepIndex: session.currentStepIndex + 1 }; }

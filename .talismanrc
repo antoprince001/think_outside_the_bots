@@ -1,6 +1,9 @@
+
 fileignoreconfig:
-- filename: pnpm-lock.yaml
-  checksum: 19ede593b16a0909c831db22ccbbf847622ffdbf96028af490f5077d09802cbc
-- filename: src/main.jsx
-  checksum: 97940bd76678c26496086e8116d7e08b111dd465ec763796d964bb8b6334f990
+- filename: specs/001-cognitive-workflows/contracts/client-workflow-contract.md
+  checksum: 56815de7a0b6acf85df4b0ed7425b1f8975fff4850bf6cdab993f85d99b454bc
+- filename: .agents/skills/speckit-implement/SKILL.md
+  checksum: c816e4bee8b54710217af2c6abc84a2ccc481652f48ff706f98b5603a6a18110
+- filename: .agents/skills/speckit-specify/SKILL.md
+  checksum: 2bdc54d92024af136af67e332e012debafc28e53aadf9c56934f151e86a6af1f
 version: ""

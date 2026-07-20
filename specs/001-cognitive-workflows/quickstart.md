@@ -23,6 +23,10 @@ pnpm test
 pnpm build
 ```
 
+Current verification (2026-07-20): `CI=true pnpm test` passed (2 files, 3 tests) and
+`CI=true pnpm build` passed. Use `CI=true` in non-interactive environments where pnpm would
+otherwise request confirmation before refreshing dependencies.
+
 Before merging, verify the Feynman, Socratic, freeze, long-draft, and custom workflows block AI
 feedback until their learner gates are met. Confirm a connection key is masked after entry, does
 not appear in browser-visible app records, and that an AI failure leaves the latest task and draft

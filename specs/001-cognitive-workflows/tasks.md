@@ -27,11 +27,11 @@ increment after the shared local-first foundations are complete.
 **Purpose**: Preserve the React/Vite stack while creating the project structure and deterministic
 test environment.
 
-- [ ] T001 Update Vite-compatible test development dependencies and `test` scripts in package.json
-- [ ] T002 Configure Vitest, jsdom, React Testing Library setup, and coverage exclusions in vite.config.js and src/test/setup.js
+- [X] T001 Update Vite-compatible test development dependencies and `test` scripts in package.json
+- [X] T002 Configure Vitest, jsdom, React Testing Library setup, and coverage exclusions in vite.config.js and src/test/setup.js
 - [ ] T003 [P] Create component, workflow, service, and test directories with module entry points under src/components/, src/workflows/, src/services/, and src/test/
 - [ ] T004 [P] Add shared test factories for workflow, session, connection, and provider fixtures in src/test/fixtures.js
-- [ ] T005 [P] Add a restrictive browser content-security policy and provider connection allow-list configuration in index.html and src/services/provider-adapter.js
+- [X] T005 [P] Add a restrictive browser content-security policy and provider connection allow-list configuration in index.html and src/services/provider-adapter.js
 
 ---
 
@@ -42,15 +42,15 @@ every workflow.
 
 **⚠️ CRITICAL**: No user-story UI work begins until this phase is complete.
 
-- [ ] T006 [P] Implement safe browser-local persistence, schema versioning, and draft/session recovery helpers in src/services/local-store.js
-- [ ] T007 [P] Implement memory and sessionStorage-only API-key storage, masking metadata, replacement, and deletion in src/services/credential-store.js
-- [ ] T008 [P] Implement the allow-listed browser provider adapter, request redaction, and generic failure mapping in src/services/provider-adapter.js
-- [ ] T009 Define prebuilt Feynman, Socratic, freeze, and long-draft workflow step presets in src/workflows/presets.js
-- [ ] T010 Implement workflow sequence validation, learner-gate invariants, and custom-workflow constraints in src/workflows/validate-workflow.js
-- [ ] T011 Implement the persisted session state machine, wall-clock freeze calculation, event timeline, and recovery transitions in src/workflows/session-machine.js
+- [X] T006 [P] Implement safe browser-local persistence, schema versioning, and draft/session recovery helpers in src/services/local-store.js
+- [X] T007 [P] Implement memory and sessionStorage-only API-key storage, masking metadata, replacement, and deletion in src/services/credential-store.js
+- [X] T008 [P] Implement the allow-listed browser provider adapter, request redaction, and generic failure mapping in src/services/provider-adapter.js
+- [X] T009 Define prebuilt Feynman, Socratic, freeze, and long-draft workflow step presets in src/workflows/presets.js
+- [X] T010 Implement workflow sequence validation, learner-gate invariants, and custom-workflow constraints in src/workflows/validate-workflow.js
+- [X] T011 Implement the persisted session state machine, wall-clock freeze calculation, event timeline, and recovery transitions in src/workflows/session-machine.js
 - [ ] T012 [P] Add unit tests for local persistence, session-only credential storage, and key redaction in src/test/services/local-store.test.js and src/test/services/credential-store.test.js
 - [ ] T013 [P] Add contract tests for allow-listed provider requests, safe failures, and mocked feedback in src/test/services/provider-adapter.test.js
-- [ ] T014 Add unit tests for workflow validation, preset rules, state transitions, and reload-safe freeze timing in src/test/workflows/session-machine.test.js and src/test/workflows/validate-workflow.test.js
+- [X] T014 Add unit tests for workflow validation, preset rules, state transitions, and reload-safe freeze timing in src/test/workflows/session-machine.test.js and src/test/workflows/validate-workflow.test.js
 
 **Checkpoint**: Shared local-first foundations pass unit and contract tests; all user stories can now
 be implemented without exposing a real API key.

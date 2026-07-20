@@ -1,69 +1,34 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowRight, BookOpen, Brain, Check, ChevronDown, Clock3, Flame, GraduationCap, HelpCircle, Lightbulb, Lock, Menu, MoreHorizontal, PenLine, Play, Plus, Send, Sparkles, Timer, X } from 'lucide-react';
+import { Brain, KeyRound, Lock, Plus, Send, Timer, Trash2 } from 'lucide-react';
+import { load, update } from './services/local-store';
+import { getKey, maskKey, removeKey, saveKey } from './services/credential-store';
+import { PROVIDERS, requestFeedback, testConnection } from './services/provider-adapter';
+import { presets } from './workflows/presets';
+import { validateWorkflow } from './workflows/validate-workflow';
+import { advance, createSession, currentStep, remaining, submit } from './workflows/session-machine';
 import './styles.css';
 
-const modes = [
-  { id: 'socratic', icon: HelpCircle, color: 'violet', title: 'Socratic pathway', desc: 'Find the answer through layered questions', time: '8–12 min', tag: 'Most popular' },
-  { id: 'feynman', icon: Lightbulb, color: 'orange', title: 'Feynman explain-back', desc: 'Teach it simply to prove you know it', time: '10–15 min', tag: 'Deep understanding' },
-  { id: 'freeze', icon: Timer, color: 'blue', title: 'Focus freeze', desc: 'A quiet window to think before AI joins', time: '5 min', tag: 'Build confidence' },
-  { id: 'draft', icon: PenLine, color: 'pink', title: 'Long draft', desc: 'Write your raw thinking before feedback', time: '12–20 min', tag: 'For essays & proofs' }
-];
-
+const uid = () => crypto.randomUUID();
 function App() {
-  const [selected, setSelected] = useState('socratic');
-  const [started, setStarted] = useState(false);
-  const [step, setStep] = useState(1);
-  const [answer, setAnswer] = useState('');
-  const [showAnswer, setShowAnswer] = useState(false);
-  const active = modes.find(m => m.id === selected);
-  const progress = useMemo(() => Math.min(100, (step / 3) * 100), [step]);
-  const prompts = [
-    'What do you already notice about the relationship between velocity and time?',
-    'If the acceleration stays constant, what shape would the velocity-time graph take?',
-    'Now use that shape to explain how you could find the displacement.'
-  ];
-  const advance = () => { if (answer.trim()) { setAnswer(''); setStep(s => Math.min(3, s + 1)); } };
-
-  return <div className="app-shell">
-    <aside className="sidebar">
-      <div className="brand"><span className="brand-mark"><Sparkles size={18}/></span><span>outside<span className="brand-dot">.</span>bots</span></div>
-      <button className="new-task"><Plus size={17}/> New learning task</button>
-      <nav>
-        <p className="nav-label">YOUR SPACE</p>
-        <a className="nav-item active"><BookOpen size={18}/> My desk</a>
-        <a className="nav-item"><Clock3 size={18}/> Recent sessions</a>
-        <a className="nav-item"><Flame size={18}/> Learning streak <span className="tiny-streak">6</span></a>
-        <p className="nav-label second">WORKFLOWS</p>
-        <a className="nav-item"><Brain size={18}/> Explore modes <span className="new-badge">NEW</span></a>
-        <a className="nav-item"><Plus size={18}/> Create a mode</a>
-      </nav>
-      <div className="profile"><div className="avatar">AM</div><div><strong>Amelia Morgan</strong><span>Year 11 · Maths</span></div><MoreHorizontal size={18}/></div>
-    </aside>
-
-    <main>
-      <header><div className="crumb"><span>My desk</span><ChevronDown size={15}/><b>Tuesday, 24 September</b></div><div className="header-actions"><button className="ghost"><HelpCircle size={18}/> How it works</button><button className="mobile-menu"><Menu size={19}/></button></div></header>
-      {!started ? <section className="intro-view">
-        <div className="welcome"><span className="eyebrow">LEARN BEFORE YOU ASK</span><h1>Hey Amelia, what will you<br/><em>work through</em> today?</h1><p>Choose a thinking mode first. We’ll keep the answer out of reach until you’ve had a proper go.</p></div>
-        <div className="task-card">
-          <div className="task-top"><div className="subject-icon"><GraduationCap size={21}/></div><div><span className="label">YOUR QUESTION</span><h2>How do I calculate displacement from a velocity-time graph?</h2></div><button className="more"><MoreHorizontal size={20}/></button></div>
-          <div className="divider"/>
-          <div className="choose-row"><div><span className="label">PICK YOUR PATH</span><h3>How do you want to think?</h3></div><span className="nudger"><Lock size={14}/> Answers unlock after the work</span></div>
-          <div className="mode-grid">{modes.map(mode => { const Icon = mode.icon; return <button key={mode.id} onClick={() => setSelected(mode.id)} className={'mode-card ' + (selected === mode.id ? 'selected ' : '') + mode.color}>
-            {selected === mode.id && <span className="selected-tick"><Check size={13}/></span>}<span className="mode-icon"><Icon size={19}/></span><div><strong>{mode.title}</strong><p>{mode.desc}</p><span className="mode-meta"><Clock3 size={13}/>{mode.time} <i>·</i> {mode.tag}</span></div>
-          </button>})}</div>
-          <div className="start-row"><span>Good choice. There’s no rush — just honest thinking.</span><button className="start" onClick={() => setStarted(true)}>Start {active.title}<ArrowRight size={17}/></button></div>
-        </div>
-        <div className="promise"><span className="promise-icon"><Lock size={16}/></span><div><strong>Built for productive struggle.</strong><p>outside.bots gives you room to reason, make mistakes, and build your own conviction — before the AI steps in.</p></div></div>
-      </section> : <section className="session-view">
-        <div className="session-top"><button className="back" onClick={() => setStarted(false)}><X size={18}/> Exit session</button><div className="mode-pill"><active.icon size={16}/>{active.title}</div><span className="step-count">Step {step} of 3</span></div>
-        <div className="progress"><span style={{width: `${progress}%`}}/></div>
-        <div className="session-grid"><div className="thinking-card"><span className="eyebrow">THINK IT THROUGH</span><h1>{prompts[step-1]}</h1><p className="session-copy">Take a minute. Your first thought doesn’t need to be perfect — it just needs to be yours.</p><div className="response-box"><textarea value={answer} onChange={e => setAnswer(e.target.value)} placeholder="Write what you think…"/><div className="response-foot"><span>{answer.length ? `${answer.length} characters` : 'Your response is private until you continue'}</span><button disabled={!answer.trim()} onClick={advance}>Continue <ArrowRight size={17}/></button></div></div></div>
-          <aside className="support-card"><div className="lock-orb"><Lock size={22}/></div><h3>AI is listening,<br/>not leading.</h3><p>Hints and the worked answer stay locked while you build your own path.</p><div className="support-line"><span>01</span> Notice what you know <Check size={15}/></div><div className={'support-line ' + (step > 1 ? 'done' : 'current')}><span>02</span> Test your reasoning {step > 1 && <Check size={15}/>}</div><div className={'support-line ' + (step > 2 ? 'done' : '')}><span>03</span> Connect the idea {step > 2 && <Check size={15}/>}</div></aside></div>
-        {step === 3 && <div className="unlock-strip"><div><span className="unlock-icon"><Sparkles size={17}/></span><strong>You’ve built a path.</strong><p>Want to compare it with a worked explanation?</p></div><button onClick={() => setShowAnswer(!showAnswer)}>{showAnswer ? 'Hide explanation' : 'Unlock AI explanation'} <Lock size={15}/></button></div>}
-        {showAnswer && <div className="answer-card"><span className="eyebrow">WORKED EXPLANATION</span><p>Displacement is the area under a velocity–time graph. Split the space beneath the line into simple shapes, calculate each area, then add them together. Areas below the time axis count as negative displacement.</p></div>}
-      </section>}
-    </main>
-  </div>
+  const [store, setStore] = useState(load); const [task, setTask] = useState(''); const [selected, setSelected] = useState('feynman');
+  const [session, setSession] = useState(null); const [draft, setDraft] = useState(''); const [feedback, setFeedback] = useState(''); const [now, setNow] = useState(Date.now()); const [showConnections, setShowConnections] = useState(false); const [showBuilder, setShowBuilder] = useState(false);
+  useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i); }, []);
+  const workflows = useMemo(() => [...presets, ...store.workflows], [store]); const workflow = workflows.find(w => w.id === selected) || presets[0];
+  const connection = store.connections.find(c => c.id === store.selectedConnection);
+  const persist = fn => setStore(update(fn));
+  const start = () => { if (!task.trim() || !connection || !getKey(connection.id)) return; const next = createSession({ task: task.trim(), workflow, connection }); persist(d => d.sessions.unshift(next)); setSession(next); setDraft(''); setFeedback(''); };
+  const saveSession = next => { setSession(next); persist(d => { const i = d.sessions.findIndex(s => s.id === next.id); if (i >= 0) d.sessions[i] = next; }); };
+  const proceed = async () => { const step = currentStep(session); if (step.type === 'freeze') { if (remaining(step, session.freezeStartedAt || session.startedAt, now) > 0) return; return saveSession(advance(session)); } if (step.type === 'contribution') return saveSession(submit(session, draft)); if (step.type === 'ai_feedback') { try { const result = await requestFeedback({ workflow: session.workflowSnapshot, contributions: session.contributions }); setFeedback(result.content); saveSession(advance(session)); } catch { saveSession({ ...session, status: 'recoverable_error' }); } return; } if (step.type === 'final_answer') { setFeedback('A worked explanation is now available because you built your own path first. Compare it to your reasoning and note one improvement.'); saveSession({ ...advance(session), status: 'complete' }); } };
+  return <div className="app-shell"><header><div className="brand"><Brain size={20}/> outside.bots</div><nav><button onClick={() => setShowConnections(!showConnections)}><KeyRound size={16}/> Models</button><button onClick={() => setShowBuilder(!showBuilder)}><Plus size={16}/> Custom workflow</button></nav></header><main>
+    {showConnections && <Connections store={store} persist={persist} />}{showBuilder && <Builder persist={persist} onSaved={w => { setSelected(w.id); setShowBuilder(false); }} />}
+    {!session ? <section className="setup"><span className="eyebrow">LEARN BEFORE YOU ASK</span><h1>Build your conviction<br/><em>before the answer.</em></h1><p>Choose a workflow that creates useful friction, then let AI respond to your thinking.</p><textarea aria-label="Learning task" value={task} onChange={e => setTask(e.target.value)} placeholder="What are you working through?" maxLength="5000" />
+      <h2>Pick your path</h2><div className="mode-grid">{workflows.map(w => <button key={w.id} className={'mode-card ' + (selected === w.id ? 'selected' : '')} onClick={() => setSelected(w.id)}><strong>{w.name}</strong><span>{w.description}</span></button>)}</div>
+      <div className="notice"><Lock size={16}/> Your selected provider receives only the task and work needed for feedback. Your API key stays in this browser session.</div><button className="primary" disabled={!task.trim() || !connection || !getKey(connection.id)} onClick={start}>Start learning <Send size={16}/></button>{!connection && <p className="hint">Add and test a model connection to begin.</p>}</section>
+    : <Session session={session} step={currentStep(session)} draft={draft} setDraft={setDraft} feedback={feedback} now={now} proceed={proceed} onExit={() => setSession(null)} />}
+  </main></div>;
 }
+function Connections({ store, persist }) { const [label, setLabel] = useState('My OpenAI model'); const [model, setModel] = useState('gpt-4.1-mini'); const [key, setKey] = useState(''); const add = async () => { const c = { id: uid(), label: label.trim(), provider: 'openai', model, status: 'untested', createdAt: new Date().toISOString() }; const tested = await testConnection(c, key); if (tested.status !== 'valid') return; saveKey(c.id, key); persist(d => { c.status = 'valid'; d.connections.push(c); d.selectedConnection = c.id; }); setKey(''); }; return <section className="panel"><h2>Your models</h2><p>Keys are session-only and are never saved with your learning history.</p>{store.connections.map(c => <div className="row" key={c.id}><span><b>{c.label}</b> · {c.model} · {maskKey(getKey(c.id))}</span><button onClick={() => persist(d => d.selectedConnection = c.id)}>Use</button><button onClick={() => { removeKey(c.id); persist(d => d.connections = d.connections.filter(x => x.id !== c.id)); }} aria-label="Remove connection"><Trash2 size={15}/></button></div>)}<input value={label} onChange={e => setLabel(e.target.value)} aria-label="Connection label"/><select value={model} onChange={e => setModel(e.target.value)}>{PROVIDERS[0].models.map(m => <option key={m}>{m}</option>)}</select><input type="password" value={key} onChange={e => setKey(e.target.value)} placeholder="API key" aria-label="API key"/><button className="primary" onClick={add}>Test and save locally</button></section>; }
+function Builder({ persist, onSaved }) { const [name, setName] = useState('My study workflow'); const [minimum, setMinimum] = useState(200); const workflow = { id: uid(), name, kind: 'custom', description: 'Your saved cognitive-friction workflow.', finalAnswerPolicy: 'allowed', steps: [{ id: 'draft', type: 'contribution', prompt: 'Write your first attempt.', minCharacters: Number(minimum) }, { id: 'feedback', type: 'ai_feedback', feedbackMode: 'draft_feedback' }, { id: 'answer', type: 'final_answer' }] }; const errors = validateWorkflow(workflow); return <section className="panel"><h2>Create a mode</h2><input value={name} onChange={e => setName(e.target.value)} aria-label="Workflow name"/><label>Minimum draft characters <input type="number" min="1" max="10000" value={minimum} onChange={e => setMinimum(e.target.value)} /></label><p>Sequence: learner draft → AI feedback → optional final answer</p>{errors.map(e => <p className="error" key={e}>{e}</p>)}<button className="primary" disabled={errors.length} onClick={() => { persist(d => d.workflows.push(workflow)); onSaved(workflow); }}>Save workflow</button></section>; }
+function Session({ session, step, draft, setDraft, feedback, now, proceed, onExit }) { const frozen = step?.type === 'freeze'; const secs = frozen ? remaining(step, session.freezeStartedAt || session.startedAt, now) : 0; const locked = frozen && secs > 0; const label = locked ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')} remaining` : step?.type === 'ai_feedback' ? 'Get feedback' : step?.type === 'final_answer' ? 'Unlock worked explanation' : 'Submit my thinking'; return <section className="session"><button className="link" onClick={onExit}>Exit — work is saved</button><span className="eyebrow">{session.workflowSnapshot.name} · Step {Math.min(session.currentStepIndex + 1, session.workflowSnapshot.steps.length)} of {session.workflowSnapshot.steps.length}</span><h1>{step?.prompt || 'You built a path.'}</h1>{frozen && <p className="timer" role="status"><Timer size={18}/>{label} — keep drafting; AI stays paused.</p>}{step?.type === 'contribution' || frozen ? <><textarea value={draft} onChange={e => setDraft(e.target.value)} placeholder="Write what you think…" maxLength="10000"/><p className="hint">{step?.minCharacters ? `${Math.max(0, step.minCharacters - draft.trim().length)} characters until feedback can unlock.` : 'Your draft is saved locally.'}</p></> : null}{feedback && <article className="feedback"><b>AI feedback</b><p>{feedback}</p></article>}{session.status === 'recoverable_error' && <p className="error">Your work is safe. Retry or choose another model.</p>}<button className="primary" disabled={(step?.type === 'contribution' && draft.trim().length < step.minCharacters) || locked} onClick={proceed}>{label}</button></section>; }
 createRoot(document.getElementById('root')).render(<App/>);
