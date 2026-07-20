@@ -1,3 +1,6 @@
+import { LogOut } from 'lucide-react';
+import { SessionTrail } from './session-trail';
+
 const EVENT_LABELS = {
   session_created: 'Session started',
   gate_open: 'Gate opened',
@@ -21,14 +24,20 @@ function labelFor(event) {
  * completed or in-progress session. Events never carry API keys or raw
  * provider payloads — see workflows/session-machine.js.
  */
-export function SessionReview({ session }) {
+export function SessionReview({ session, onExit }) {
   return (
     <section className="session">
-      <span className="eyebrow">
-        {session.workflowSnapshot.name} · {session.status === 'complete' ? 'Complete' : 'In progress'}
-      </span>
+      <div className="session-header">
+        <span className="eyebrow">
+          {session.workflowSnapshot.name} · {session.status === 'complete' ? 'Complete' : 'In progress'}
+        </span>
+        <button type="button" className="secondary" onClick={onExit}>
+          <LogOut size={16} /> Exit
+        </button>
+      </div>
       <h1>Session review</h1>
-      <p>{session.task}</p>
+
+      <SessionTrail session={session} />
 
       <ol className="timeline">
         {session.events.map((event) => (
@@ -39,12 +48,6 @@ export function SessionReview({ session }) {
         ))}
       </ol>
 
-      {session.contributions.map((contribution) => (
-        <article key={contribution.id} className="feedback">
-          <b>Your {contribution.kind}</b>
-          <p>{contribution.body}</p>
-        </article>
-      ))}
     </section>
   );
 }

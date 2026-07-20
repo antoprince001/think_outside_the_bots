@@ -13,6 +13,7 @@ export function createSession({ task, workflow, connection }) {
     status: 'active',
     currentStepIndex: 0,
     contributions: [],
+    feedbacks: [],
     events: [{ id: uid(), type: 'session_created', at: now }],
     startedAt: now,
     freezeStartedAt: null,

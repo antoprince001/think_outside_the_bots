@@ -133,7 +133,9 @@ function App() {
           />
         )}
 
-        {session && activePanel === 'setup' && session.status === 'complete' && <SessionReview session={session} />}
+        {session && activePanel === 'setup' && session.status === 'complete' && (
+          <SessionReview session={session} onExit={() => setSession(null)} />
+        )}
       </main>
     </div>
   );

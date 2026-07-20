@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { SessionReview } from '../../components/session-review';
 import { createSession } from '../../workflows/session-machine';
 import { presets } from '../../workflows/presets';
@@ -20,9 +20,29 @@ describe('SessionReview', () => {
     expect(screen.getByText('My explanation text')).toBeInTheDocument();
   });
 
+  it('shows saved AI feedback in the learning trail', () => {
+    const session = createSession({ task: 'x', workflow: feynman, connection: null });
+    session.feedbacks.push({
+      id: 'f1',
+      kind: 'feedback',
+      content: 'AI feedback text',
+      createdAt: new Date().toISOString(),
+    });
+    render(<SessionReview session={session} />);
+    expect(screen.getByLabelText('Learning trail')).toHaveTextContent('AI feedback text');
+  });
+
   it('shows whether the session is complete or still in progress', () => {
     const session = createSession({ task: 'x', workflow: feynman, connection: null });
     render(<SessionReview session={{ ...session, status: 'complete' }} />);
     expect(screen.getByText(/complete/i)).toBeInTheDocument();
+  });
+
+  it('exits the review when the exit button is clicked', () => {
+    const onExit = vi.fn();
+    const session = createSession({ task: 'x', workflow: feynman, connection: null });
+    render(<SessionReview session={session} onExit={onExit} />);
+    fireEvent.click(screen.getByRole('button', { name: /exit/i }));
+    expect(onExit).toHaveBeenCalledTimes(1);
   });
 });

@@ -53,13 +53,16 @@ describe('SessionShell', () => {
     });
     let session = createSession({ task: 'x', workflow: feynman, connection });
     session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(150) }] };
-    renderShell(session);
+    const onSessionChange = renderShell(session);
 
     fireEvent.click(screen.getByRole('button', { name: /get feedback/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/consider explaining the base case/i)).toBeInTheDocument();
+      expect(onSessionChange).toHaveBeenCalled();
     });
+    expect(onSessionChange.mock.calls[0][0].feedbacks).toEqual([
+      expect.objectContaining({ content: 'Consider explaining the base case.' }),
+    ]);
   });
 
   it('requests feedback using the Google provider from the session snapshot', async () => {

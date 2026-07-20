@@ -1,8 +1,11 @@
 import { useState } from 'react';
+import { LogOut } from 'lucide-react';
 import { getKey } from '../services/credential-store';
 import { requestFeedback } from '../services/provider-adapter';
 import { advance, currentStep, remaining, submit } from '../workflows/session-machine';
+import { uid } from '../utils/uid';
 import { GatePanel } from './gate-panel';
+import { SessionTrail } from './session-trail';
 
 const FINAL_ANSWER_MESSAGE =
   'A worked explanation is now available because you built your own path first. Compare it to ' +
@@ -17,7 +20,6 @@ const FINAL_ANSWER_MESSAGE =
  */
 export function SessionShell({ session, onSessionChange, connections, now, onExit }) {
   const [draft, setDraft] = useState('');
-  const [feedback, setFeedback] = useState('');
 
   const step = currentStep(session);
   const isFrozenStep = step?.type === 'freeze';
@@ -40,16 +42,35 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
         workflow: session.workflowSnapshot,
         contributions: session.contributions,
       });
-      setFeedback(result.content);
-      onSessionChange(advance(session));
+      const feedbackRecord = {
+        id: uid(),
+        kind: result.kind,
+        content: result.content,
+        createdAt: new Date().toISOString(),
+      };
+      onSessionChange(advance({
+        ...session,
+        feedbacks: [...(session.feedbacks ?? []), feedbackRecord],
+      }));
     } catch {
       onSessionChange({ ...session, status: 'recoverable_error' });
     }
   }
 
   function revealFinalAnswer() {
-    setFeedback(FINAL_ANSWER_MESSAGE);
-    onSessionChange({ ...advance(session), status: 'complete' });
+    const feedbackRecord = {
+      id: uid(),
+      kind: 'final_answer',
+      content: FINAL_ANSWER_MESSAGE,
+      createdAt: new Date().toISOString(),
+    };
+    onSessionChange({
+      ...advance({
+        ...session,
+        feedbacks: [...(session.feedbacks ?? []), feedbackRecord],
+      }),
+      status: 'complete',
+    });
   }
 
   function handleAction() {
@@ -76,20 +97,24 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
 
   return (
     <section className="session">
-      <button type="button" className="link" onClick={onExit}>
-        Exit — work is saved
-      </button>
-      <span className="eyebrow">
-        {session.workflowSnapshot.name} · Step {stepNumber} of {totalSteps}
-      </span>
+      <div className="session-header">
+        <span className="eyebrow">
+          {session.workflowSnapshot.name} · Step {stepNumber} of {totalSteps}
+        </span>
+        <button type="button" className="secondary" onClick={onExit}>
+          <LogOut size={16} /> Exit
+        </button>
+      </div>
       <h1>{step?.prompt || 'You built a path.'}</h1>
+
+      <SessionTrail session={session} />
 
       <GatePanel
         session={session}
         step={step}
         draft={draft}
         onDraftChange={setDraft}
-        feedback={feedback}
+        feedback=""
         now={now}
         onAction={handleAction}
       />

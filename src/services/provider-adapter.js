@@ -59,15 +59,11 @@ export async function requestFeedback({ connection, key, task, workflow, contrib
         console.log('Inside google requestFeedback')
 
       const google = createGoogle({ apiKey: key });
-      // result = await generateText({
-      //   model: google(connection.model),
-      //   system: instruction,
-      //   prompt: `Task: ${task}\nStudent work: ${latestContribution}`,
-      //   maxOutputTokens: 300,
-      // });
       result = await generateText({
-        model: google('gemini-2.5-flash'),
-        prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+        model: google(connection.model),
+        system: instruction,
+        prompt: `Task: ${task}\nStudent work: ${latestContribution}`,
+        maxOutputTokens: 300,
       });
     } else {
       console.log('Unsuported provider')
