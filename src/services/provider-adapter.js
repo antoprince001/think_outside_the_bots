@@ -56,15 +56,21 @@ export async function requestFeedback({ connection, key, task, workflow, contrib
         maxOutputTokens: 300,
       });
     } else if (providerId === 'google') {
-        console.log('Inside google requestFeedback')
+        console.log(instruction)
+        console.log(task)
+        console.log(latestContribution)
 
       const google = createGoogle({ apiKey: key });
       result = await generateText({
-        model: google(connection.model),
+        model: google('gemini-2.5-flash'),
         system: instruction,
         prompt: `Task: ${task}\nStudent work: ${latestContribution}`,
         maxOutputTokens: 300,
       });
+      // result = await generateText({
+      //   model: google('gemini-2.5-flash'),
+      //   prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+      // });
     } else {
       console.log('Unsuported provider')
       throw new Error('Unsupported provider.');

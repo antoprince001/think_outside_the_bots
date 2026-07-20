@@ -13,8 +13,16 @@ export const presets = [
         contributionKind: 'explanation',
         minCharacters: 120,
       },
-      { id: 'feedback', type: 'ai_feedback', feedbackMode: 'gap_feedback' },
-      { id: 'answer', type: 'final_answer', allowed: true },
+      { 
+        id: 'feedback', 
+        type: 'ai_feedback', 
+        feedbackMode: 'gap_feedback'
+      },
+      { 
+        id: 'answer', 
+        type: 'final_answer', 
+        allowed: true 
+      },
     ],
   },
   {

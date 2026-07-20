@@ -7,7 +7,8 @@ function formatCountdown(secondsLeft) {
   return `${minutes}:${seconds} remaining`;
 }
 
-function actionLabel({ step, isLocked, secondsLeft }) {
+function actionLabel({ step, isLocked, secondsLeft, isAiLoading }) {
+  if (isAiLoading) return 'Getting feedback...';
   if (isLocked) return formatCountdown(secondsLeft);
   if (step?.type === 'ai_feedback') return 'Get feedback';
   if (step?.type === 'final_answer') return 'Unlock worked explanation';
@@ -23,7 +24,7 @@ function actionLabel({ step, isLocked, secondsLeft }) {
  * wall-clock timestamp) rather than a live in-memory countdown, so a
  * reload cannot shorten the enforced wait — see workflows/session-machine.js.
  */
-export function GatePanel({ session, step, draft, onDraftChange, feedback, now, onAction }) {
+export function GatePanel({ session, step, draft, onDraftChange, feedback, now, onAction, isAiLoading = false }) {
   const isFreezeStep = step?.type === 'freeze';
   const secondsLeft = isFreezeStep
     ? remaining(step, session.freezeStartedAt || session.startedAt, now)
@@ -71,8 +72,22 @@ export function GatePanel({ session, step, draft, onDraftChange, feedback, now, 
         <p className="error">Your work is safe. Retry or choose another model.</p>
       )}
 
-      <button type="button" className="primary" disabled={isBelowMinimum || isLocked} onClick={onAction}>
-        {actionLabel({ step, isLocked, secondsLeft })}
+      {isAiLoading && (
+        <p className="ai-loading" role="status" aria-live="polite">
+          <span className="spinner" aria-hidden="true" />
+          Asking the model for feedback...
+        </p>
+      )}
+
+      <button
+        type="button"
+        className="primary"
+        disabled={isBelowMinimum || isLocked || isAiLoading}
+        onClick={onAction}
+        aria-busy={isAiLoading}
+      >
+        {isAiLoading && <span className="spinner button-spinner" aria-hidden="true" />}
+        {actionLabel({ step, isLocked, secondsLeft, isAiLoading })}
       </button>
     </>
   );
