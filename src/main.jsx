@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Brain, KeyRound, Plus } from 'lucide-react';
+import { Brain, KeyRound, LayoutList, Menu, Plus, X } from 'lucide-react';
+import { HomePage } from './components/home-page';
 import { ModelConnections } from './components/model-connections';
 import { SessionReview } from './components/session-review';
 import { SessionShell } from './components/session-shell';
@@ -26,10 +27,11 @@ function useClock() {
 function App() {
   const [store, setStore] = useState(load);
   const [task, setTask] = useState('');
+  const [fileInput, setFileInput] = useState(null);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState(presets[0].id);
   const [session, setSession] = useState(null);
-  const [showConnections, setShowConnections] = useState(false);
-  const [showBuilder, setShowBuilder] = useState(false);
+  const [activePanel, setActivePanel] = useState('home');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const now = useClock();
 
   const workflows = useMemo(() => [...presets, ...store.workflows], [store.workflows]);
@@ -48,9 +50,13 @@ function App() {
   }
 
   function startSession() {
-    if (!task.trim() || !hasReadyConnection) return;
+    const hasTaskInput = task.trim() || (selectedWorkflow.kind === 'custom' && fileInput);
+    if (!hasTaskInput || !hasReadyConnection) return;
+    const taskWithFile = fileInput && selectedWorkflow.kind === 'custom'
+      ? `${task.trim() ? `${task.trim()}\n\n` : ''}Attached file: ${fileInput.name}\n\n${fileInput.content}`
+      : task.trim();
     const newSession = createSession({
-      task: task.trim(),
+      task: taskWithFile,
       workflow: selectedWorkflow,
       connection: selectedConnection,
     });
@@ -60,42 +66,64 @@ function App() {
 
   function handleWorkflowSaved(workflow) {
     setSelectedWorkflowId(workflow.id);
-    setShowBuilder(false);
+    setActivePanel('setup');
+  }
+
+  function handleSelectWorkflow(workflowId) {
+    setSelectedWorkflowId(workflowId);
+    if (workflows.find((workflow) => workflow.id === workflowId)?.kind !== 'custom') setFileInput(null);
   }
 
   return (
     <div className="app-shell">
-      <header>
-        <div className="brand">
-          <Brain size={20} /> Think Outside The Bots
+      {!isSidebarOpen && (
+        <button type="button" className="menu-toggle" onClick={() => setIsSidebarOpen(true)} aria-label="Open navigation menu">
+          <Menu size={21} />
+        </button>
+      )}
+      {isSidebarOpen && <aside className="sidebar">
+        <div className="sidebar-heading">
+          <button type="button" className="brand" onClick={() => setActivePanel('home')} aria-label="Go to home page">
+            <Brain size={20} /> Think Outside The Bots
+          </button>
+          <button type="button" className="menu-toggle" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation menu">
+            <X size={20} />
+          </button>
         </div>
-        <nav>
-          <button type="button" onClick={() => setShowConnections((open) => !open)}>
+        <nav aria-label="Application navigation">
+          <button type="button" className={activePanel === 'setup' ? 'active' : ''} onClick={() => setActivePanel('setup')}>
+            <LayoutList size={16} /> Learning space
+          </button>
+          <button type="button" className={activePanel === 'models' ? 'active' : ''} onClick={() => setActivePanel('models')}>
             <KeyRound size={16} /> Models
           </button>
-          <button type="button" onClick={() => setShowBuilder((open) => !open)}>
+          <button type="button" className={activePanel === 'workflow' ? 'active' : ''} onClick={() => setActivePanel('workflow')}>
             <Plus size={16} /> Custom workflow
           </button>
         </nav>
-      </header>
+      </aside>}
 
       <main>
-        {showConnections && <ModelConnections store={store} persist={persist} />}
-        {showBuilder && <WorkflowBuilder persist={persist} onSaved={handleWorkflowSaved} />}
+        {activePanel === 'home' && <HomePage onGetStarted={() => setActivePanel('setup')} />}
+        {activePanel === 'models' && <ModelConnections store={store} persist={persist} />}
+        {activePanel === 'workflow' && <WorkflowBuilder persist={persist} onSaved={handleWorkflowSaved} />}
 
-        {!session && (
+        {!session && activePanel === 'setup' && (
           <TaskSetup
             task={task}
             onTaskChange={setTask}
             workflows={workflows}
             selectedWorkflowId={selectedWorkflowId}
-            onSelectWorkflow={setSelectedWorkflowId}
+            selectedWorkflow={selectedWorkflow}
+            onSelectWorkflow={handleSelectWorkflow}
+            fileInput={fileInput}
+            onFileInputChange={setFileInput}
             hasReadyConnection={hasReadyConnection}
             onStart={startSession}
           />
         )}
 
-        {session && session.status !== 'complete' && (
+        {session && activePanel === 'setup' && session.status !== 'complete' && (
           <SessionShell
             session={session}
             onSessionChange={saveSession}
@@ -105,7 +133,7 @@ function App() {
           />
         )}
 
-        {session && session.status === 'complete' && <SessionReview session={session} />}
+        {session && activePanel === 'setup' && session.status === 'complete' && <SessionReview session={session} />}
       </main>
     </div>
   );

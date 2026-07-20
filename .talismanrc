@@ -1,9 +1,26 @@
-
 fileignoreconfig:
-- filename: specs/001-cognitive-workflows/contracts/client-workflow-contract.md
-  checksum: 56815de7a0b6acf85df4b0ed7425b1f8975fff4850bf6cdab993f85d99b454bc
-- filename: .agents/skills/speckit-implement/SKILL.md
-  checksum: c816e4bee8b54710217af2c6abc84a2ccc481652f48ff706f98b5603a6a18110
-- filename: .agents/skills/speckit-specify/SKILL.md
-  checksum: 2bdc54d92024af136af67e332e012debafc28e53aadf9c56934f151e86a6af1f
+- filename: pnpm-lock.yaml
+  checksum: 498148adc1cc4c5bb11d9ecb954f55f7348508e128b794255a581a74f0c712f6
+- filename: src/components/workflow-builder.jsx
+  checksum: c582ce17d2460b396cbe328625867072cf7a1f13a9539e3bdd1392ee30e96cac
+- filename: src/components/workflow-picker.jsx
+  checksum: f63f4c680d7effa9af9bea11494839d4c79c5796cfd282abe6a7a5cfa17a7c91
+- filename: src/main.jsx
+  checksum: 7a317b7ada3b74ec7d5f79ff9234f0dd69470b7fcbad830f408b2632d8e4cf64
+- filename: src/components/model-connections.jsx
+  checksum: f38f308825bdab5505923ef9c90a0222e32cb04124348933226b96b2efe80f81
+- filename: src/components/session-review.jsx
+  checksum: 2293565e0c96cb75ee9c15bb2e929048d28d71e5e3cdc4ed79644471f5736e6a
+- filename: src/services/credential-store.js
+  checksum: 80cf1db463b25140f0d41b96406c9666978a4becfe5690ef942f65e80d8433e1
+- filename: src/test/services/provider-adapter.test.js
+  checksum: 717a531b8faa0348b6f89a307d62abcf33e9716359c4dbcd3c0c25ecfa227d6a
+- filename: src/components/session-shell.jsx
+  checksum: 59ce505ab7380de3b6b4102c813315778d2a29b6b710f168f16383e47584033a
+- filename: src/test/components/model-connections.test.jsx
+  checksum: eaa4df5e52dcb726db865b2ab0fc40e9ac04d5499c87ed48a4abcd8acb737f41
+- filename: src/services/local-store.js
+  checksum: 30485ea62eccac0dac51be978313245ed60bdc191bb091d9d835dfd3ff207e1d
+- filename: src/test/services/credential-store.test.js
+  checksum: 7669fc8017850754a20eec2eff013008f828b7cc1c3e316cd543acc5b8ece594
 version: ""
