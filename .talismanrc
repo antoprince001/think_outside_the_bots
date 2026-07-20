@@ -1,4 +1,6 @@
 fileignoreconfig:
-- filename: src/styles.css
-  checksum: e10df5c9aa1a8836223918f1ab9e7464b0369c8b13200c6bc0b08c165a3485af
+- filename: src/services/provider-adapter.js
+  checksum: 2fe85927dcd025411a23df04b2474a678ee370f1c5ab654e3d08e75a819a92de
+- filename: src/workflows/workflow-model.js
+  checksum: 5f596773eafd9c774a29b0d370e21e642ee5c42b2dce81a3149e646347b997ce
 version: ""

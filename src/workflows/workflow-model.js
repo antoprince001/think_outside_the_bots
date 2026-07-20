@@ -24,13 +24,13 @@ export function normalizeStep(step = {}) {
   const activity = step.activity ?? legacy.activity;
   const actor = step.actor ?? legacy.actor;
   const validation = {
-    ...(step.validation ?? {}),
     ...(step.minCharacters ? { minCharacters: step.minCharacters } : {}),
+    ...(step.validation ?? {}),
   };
   const configuration = {
-    ...(step.configuration ?? {}),
     ...(step.durationSeconds ? { durationSeconds: step.durationSeconds } : {}),
     ...(step.message ? { message: step.message } : {}),
+    ...(step.configuration ?? {}),
   };
 
   return {
@@ -80,4 +80,21 @@ export function resolveStepInputs(step, session) {
     values[key] = renderTemplate(value, context);
   });
   return values;
+}
+
+export function withTimerDuration(workflow, durationSeconds) {
+  return {
+    ...workflow,
+    steps: (workflow.steps ?? []).map((step) => {
+      const normalized = normalizeStep(step);
+      if (normalized.activity !== 'timer') return step;
+      return {
+        ...step,
+        configuration: {
+          ...normalized.configuration,
+          durationSeconds,
+        },
+      };
+    }),
+  };
 }

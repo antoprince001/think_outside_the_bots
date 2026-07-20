@@ -4,6 +4,13 @@ import { WorkflowPicker } from './workflow-picker';
 
 const MAX_FILE_SIZE = 1024 * 1024;
 const TEXT_FILE_TYPES = ['text/plain', 'text/markdown', 'application/json', 'text/csv'];
+const FREEZE_OPTIONS = [
+  { label: '1 min', value: 60 },
+  { label: '3 min', value: 180 },
+  { label: '5 min', value: 300 },
+  { label: '10 min', value: 600 },
+  { label: '15 min', value: 900 },
+];
 
 function supportsText(file) {
   return TEXT_FILE_TYPES.includes(file.type) || /\.(txt|md|markdown|csv|json)$/i.test(file.name);
@@ -21,6 +28,8 @@ export function TaskSetup({
   selectedWorkflowId,
   selectedWorkflow,
   onSelectWorkflow,
+  freezeDurationSeconds,
+  onFreezeDurationChange,
   fileInput,
   onFileInputChange,
   hasReadyConnection,
@@ -28,6 +37,7 @@ export function TaskSetup({
 }) {
   const [fileError, setFileError] = useState('');
   const acceptsFile = selectedWorkflow?.kind === 'custom';
+  const allowsTimerChoice = selectedWorkflow?.id === 'freeze';
   const canStart = (task.trim().length > 0 || (acceptsFile && fileInput)) && hasReadyConnection;
 
   async function handleFileChange(event) {
@@ -67,6 +77,26 @@ export function TaskSetup({
         selectedId={selectedWorkflowId}
         onSelect={onSelectWorkflow}
       />
+
+      {allowsTimerChoice && (
+        <div className="timer-choice">
+          <h2>Freeze duration</h2>
+          <div className="segmented" role="radiogroup" aria-label="AI freeze duration">
+            {FREEZE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={freezeDurationSeconds === option.value}
+                className={freezeDurationSeconds === option.value ? 'selected' : ''}
+                onClick={() => onFreezeDurationChange(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {acceptsFile && (
         <div className="file-input">

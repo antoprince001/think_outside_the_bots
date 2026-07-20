@@ -9,7 +9,12 @@ function renderSetup(overrides = {}) {
     onTaskChange: vi.fn(),
     workflows: presets,
     selectedWorkflowId: presets[0].id,
+    selectedWorkflow: presets[0],
     onSelectWorkflow: vi.fn(),
+    freezeDurationSeconds: 180,
+    onFreezeDurationChange: vi.fn(),
+    fileInput: null,
+    onFileInputChange: vi.fn(),
     hasReadyConnection: false,
     onStart: vi.fn(),
     ...overrides,
@@ -52,5 +57,19 @@ describe('TaskSetup', () => {
     const props = renderSetup();
     fireEvent.click(screen.getByText(presets[1].name));
     expect(props.onSelectWorkflow).toHaveBeenCalledWith(presets[1].id);
+  });
+
+  it('shows AI freeze duration choices only for the freeze workflow', () => {
+    const freeze = presets.find((preset) => preset.id === 'freeze');
+    renderSetup({ selectedWorkflowId: freeze.id, selectedWorkflow: freeze });
+    expect(screen.getByRole('radiogroup', { name: /ai freeze duration/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /3 min/i })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('updates the selected freeze duration', () => {
+    const freeze = presets.find((preset) => preset.id === 'freeze');
+    const props = renderSetup({ selectedWorkflowId: freeze.id, selectedWorkflow: freeze });
+    fireEvent.click(screen.getByRole('radio', { name: /10 min/i }));
+    expect(props.onFreezeDurationChange).toHaveBeenCalledWith(600);
   });
 });

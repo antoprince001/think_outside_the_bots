@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { presets } from '../../workflows/presets';
 import { createSession, currentStep, submit, advance, remaining } from '../../workflows/session-machine';
+import { withTimerDuration } from '../../workflows/workflow-model';
 
 const feynman = presets.find((p) => p.id === 'feynman');
 const freeze = presets.find((p) => p.id === 'freeze');
@@ -47,5 +48,14 @@ describe('session-machine', () => {
     const startedMs = new Date(session.freezeStartedAt).getTime();
     const secsLeft = remaining(step, session.freezeStartedAt, startedMs + 60_000);
     expect(secsLeft).toBe(120); // 180s duration - 60s elapsed, survives reload since it's wall-clock based
+  });
+
+  it('uses a custom freeze timer duration when the workflow is configured before session start', () => {
+    const customFreeze = withTimerDuration(freeze, 600);
+    let session = createSession({ task: 'x', workflow: customFreeze, connection: null });
+    session = submit(session, 'first attempt');
+    const step = currentStep(session);
+    const startedMs = new Date(session.freezeStartedAt).getTime();
+    expect(remaining(step, session.freezeStartedAt, startedMs + 60_000)).toBe(540);
   });
 });

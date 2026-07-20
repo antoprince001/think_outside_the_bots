@@ -11,9 +11,11 @@ import { getKey } from './services/credential-store';
 import { load, update } from './services/local-store';
 import { createSession } from './workflows/session-machine';
 import { presets } from './workflows/presets';
+import { withTimerDuration } from './workflows/workflow-model';
 import './styles.css';
 
 const CLOCK_TICK_MS = 1000;
+const DEFAULT_FREEZE_SECONDS = 180;
 
 function useClock() {
   const [now, setNow] = useState(Date.now());
@@ -29,6 +31,7 @@ function App() {
   const [task, setTask] = useState('');
   const [fileInput, setFileInput] = useState(null);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState(presets[0].id);
+  const [freezeDurationSeconds, setFreezeDurationSeconds] = useState(DEFAULT_FREEZE_SECONDS);
   const [session, setSession] = useState(null);
   const [activePanel, setActivePanel] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -55,9 +58,12 @@ function App() {
     const taskWithFile = fileInput && selectedWorkflow.kind === 'custom'
       ? `${task.trim() ? `${task.trim()}\n\n` : ''}Attached file: ${fileInput.name}\n\n${fileInput.content}`
       : task.trim();
+    const workflow = selectedWorkflow.id === 'freeze'
+      ? withTimerDuration(selectedWorkflow, freezeDurationSeconds)
+      : selectedWorkflow;
     const newSession = createSession({
       task: taskWithFile,
-      workflow: selectedWorkflow,
+      workflow,
       connection: selectedConnection,
     });
     persist((draft) => draft.sessions.unshift(newSession));
@@ -116,6 +122,8 @@ function App() {
             selectedWorkflowId={selectedWorkflowId}
             selectedWorkflow={selectedWorkflow}
             onSelectWorkflow={handleSelectWorkflow}
+            freezeDurationSeconds={freezeDurationSeconds}
+            onFreezeDurationChange={setFreezeDurationSeconds}
             fileInput={fileInput}
             onFileInputChange={setFileInput}
             hasReadyConnection={hasReadyConnection}
