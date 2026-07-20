@@ -47,7 +47,16 @@ describe('WorkflowBuilder', () => {
     const { store } = renderBuilder();
     fireEvent.click(screen.getByRole('button', { name: /save workflow/i }));
     const [draftStep, feedbackStep] = store.workflows[0].steps;
-    expect(draftStep.type).toBe('contribution');
-    expect(feedbackStep.type).toBe('ai_feedback');
+    expect(draftStep).toEqual(expect.objectContaining({
+      actor: 'learner',
+      activity: 'write',
+      output: 'draft',
+    }));
+    expect(feedbackStep).toEqual(expect.objectContaining({
+      actor: 'ai',
+      activity: 'feedback',
+      skill: 'draft_feedback',
+      output: 'feedback',
+    }));
   });
 });

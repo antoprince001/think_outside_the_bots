@@ -1,4 +1,4 @@
-const VALID_TYPES = ['contribution', 'freeze', 'ai_feedback', 'final_answer'];
+import { ACTIVITIES, ACTORS, AI_SKILLS, minCharactersFor, normalizeStep, normalizeWorkflow } from './workflow-model';
 
 export function validateWorkflow(workflow) {
   const errors = [];
@@ -12,42 +12,53 @@ export function validateWorkflow(workflow) {
     return errors;
   }
 
-  let sawContribution = false;
-  let finalAnswerCount = 0;
+  const normalized = normalizeWorkflow(workflow);
+  let sawLearnerWrite = false;
+  let generateCount = 0;
 
-  workflow.steps.forEach((step, index) => {
-    if (!VALID_TYPES.includes(step.type)) {
-      errors.push(`Step ${index + 1} has an unsupported type.`);
+  normalized.steps.forEach((rawStep, index) => {
+    const step = normalizeStep(rawStep);
+    if (!ACTORS.includes(step.actor)) {
+      errors.push(`Step ${index + 1} has an unsupported actor.`);
+    }
+    if (!ACTIVITIES.includes(step.activity)) {
+      errors.push(`Step ${index + 1} has an unsupported activity.`);
       return;
     }
-    if (step.type === 'contribution') {
-      if (!step.prompt || !step.prompt.trim()) errors.push(`Step ${index + 1} needs a prompt.`);
-      const min = Number(step.minCharacters);
+
+    if (step.activity === 'write') {
+      if (step.actor !== 'learner') errors.push(`Step ${index + 1} write activity must be performed by a learner.`);
+      if (!step.instruction || !step.instruction.trim()) errors.push(`Step ${index + 1} needs an instruction.`);
+      const min = minCharactersFor(step);
       if (!Number.isInteger(min) || min < 1 || min > 10000) {
         errors.push(`Step ${index + 1} minimum characters must be 1-10,000.`);
       }
-      sawContribution = true;
+      if (!step.output) errors.push(`Step ${index + 1} needs an output variable.`);
+      sawLearnerWrite = true;
     }
-    if (step.type === 'freeze') {
-      const duration = Number(step.durationSeconds);
+
+    if (step.activity === 'timer') {
+      const duration = Number(step.configuration?.durationSeconds);
       if (!Number.isInteger(duration) || duration < 60 || duration > 3600) {
-        errors.push(`Step ${index + 1} freeze duration must be 60-3,600 seconds.`);
+        errors.push(`Step ${index + 1} timer duration must be 60-3,600 seconds.`);
       }
     }
-    if (step.type === 'ai_feedback') {
-      if (!sawContribution) errors.push(`Step ${index + 1} needs a learner contribution first.`);
-      if (!['gap_feedback', 'socratic_question', 'draft_feedback'].includes(step.feedbackMode)) {
-        errors.push(`Step ${index + 1} has an unsupported feedback mode.`);
+
+    if (step.actor === 'ai') {
+      if (!sawLearnerWrite) errors.push(`Step ${index + 1} needs a learner contribution first.`);
+      if (!step.skill || !AI_SKILLS[step.skill]) {
+        errors.push(`Step ${index + 1} has an unsupported AI skill.`);
       }
+      if (!step.output) errors.push(`Step ${index + 1} needs an output variable.`);
     }
-    if (step.type === 'final_answer') {
-      finalAnswerCount += 1;
-      if (!sawContribution) errors.push(`Step ${index + 1} needs a learner contribution first.`);
+
+    if (step.activity === 'generate') {
+      generateCount += 1;
     }
   });
 
-  if (!sawContribution) errors.push('A custom workflow needs at least one learner contribution.');
-  if (finalAnswerCount > 1) errors.push('Only one final-answer step is allowed.');
+  if (!sawLearnerWrite) errors.push('A custom workflow needs at least one learner contribution.');
+  if (generateCount > 1) errors.push('Only one generate step is allowed.');
 
   return errors;
 }

@@ -1,82 +1,288 @@
 export const presets = [
   {
-    id: 'feynman',
-    name: 'Feynman technique',
-    kind: 'prebuilt',
-    description: 'Explain it in your own words first. AI points out the gaps.',
-    finalAnswerPolicy: 'allowed',
+    version: "1.0.0",
+
+    id: "feynman",
+    name: "Feynman Technique",
+    kind: "prebuilt",
+    description:
+      "Explain it in your own words first. AI points out the gaps.",
+
+    inputs: ["problem"],
+
+    variables: {
+      explanation: null,
+      feedback: null,
+      finalAnswer: null,
+    },
+
     steps: [
       {
-        id: 'explain',
-        type: 'contribution',
-        prompt: 'Explain the task in your own words, as if teaching someone new to it.',
-        contributionKind: 'explanation',
-        minCharacters: 120,
+        id: "explain",
+
+        actor: "learner",
+        activity: "write",
+
+        instruction:
+          "Explain the task in your own words, as if teaching someone new to it.",
+
+        validation: {
+          minCharacters: 120,
+        },
+
+        output: "explanation",
       },
-      { 
-        id: 'feedback', 
-        type: 'ai_feedback', 
-        feedbackMode: 'gap_feedback'
+
+      {
+        id: "feedback",
+
+        actor: "ai",
+        activity: "feedback",
+
+        skill: "gap_feedback",
+
+        inputs: {
+          problem: "{{inputs.problem}}",
+          explanation: "{{vars.explanation}}",
+        },
+
+        output: "feedback",
       },
-      { 
-        id: 'answer', 
-        type: 'final_answer', 
-        allowed: true 
+
+      {
+        id: "answer",
+
+        actor: "ai",
+        activity: "generate",
+
+        skill: "final_answer",
+
+        enabled: true,
+
+        inputs: {
+          problem: "{{inputs.problem}}",
+          explanation: "{{vars.explanation}}",
+        },
+
+        output: "finalAnswer",
       },
     ],
+
+    outputs: {
+      answer: "{{vars.finalAnswer}}",
+    },
   },
+
   {
-    id: 'socratic',
-    name: 'Socratic questioning',
-    kind: 'prebuilt',
-    description: 'Respond to focused questions instead of getting a direct answer.',
-    finalAnswerPolicy: 'never',
+    version: "1.0.0",
+
+    id: "socratic",
+    name: "Socratic Questioning",
+    kind: "prebuilt",
+    description:
+      "Respond to focused questions instead of getting a direct answer.",
+
+    inputs: ["problem"],
+
+    variables: {
+      response: null,
+      question: null,
+    },
+
     steps: [
       {
-        id: 'respond',
-        type: 'contribution',
-        prompt: 'Share your current thinking or attempt.',
-        contributionKind: 'response',
-        minCharacters: 40,
+        id: "respond",
+
+        actor: "learner",
+        activity: "write",
+
+        instruction: "Share your current thinking or attempt.",
+
+        validation: {
+          minCharacters: 40,
+        },
+
+        output: "response",
       },
-      { id: 'question', type: 'ai_feedback', feedbackMode: 'socratic_question' },
+
+      {
+        id: "question",
+
+        actor: "ai",
+        activity: "feedback",
+
+        skill: "socratic_question",
+
+        inputs: {
+          problem: "{{inputs.problem}}",
+          response: "{{vars.response}}",
+        },
+
+        output: "question",
+      },
     ],
+
+    outputs: {
+      latestQuestion: "{{vars.question}}",
+    },
   },
+
   {
-    id: 'freeze',
-    name: 'AI freeze window',
-    kind: 'prebuilt',
-    description: 'AI stays paused for a set time while you draft.',
-    finalAnswerPolicy: 'allowed',
+    version: "1.0.0",
+
+    id: "freeze",
+    name: "AI Freeze Window",
+    kind: "prebuilt",
+    description:
+      "AI stays paused for a set time while you draft.",
+
+    inputs: ["problem"],
+
+    variables: {
+      draft: null,
+      feedback: null,
+      finalAnswer: null,
+    },
+
     steps: [
       {
-        id: 'draft',
-        type: 'contribution',
-        prompt: 'Start drafting your own attempt.',
-        contributionKind: 'draft',
-        minCharacters: 1,
+        id: "draft",
+
+        actor: "learner",
+        activity: "write",
+
+        instruction: "Start drafting your own attempt.",
+
+        validation: {
+          minCharacters: 1,
+        },
+
+        output: "draft",
       },
-      { id: 'wait', type: 'freeze', prompt: 'Keep drafting — AI is paused.', durationSeconds: 180 },
-      { id: 'feedback', type: 'ai_feedback', feedbackMode: 'draft_feedback' },
-      { id: 'answer', type: 'final_answer', allowed: true },
+
+      {
+        id: "freeze",
+
+        actor: "system",
+        activity: "timer",
+
+        durationSeconds: 180,
+
+        message:
+          "Keep drafting. AI is intentionally paused.",
+      },
+
+      {
+        id: "feedback",
+
+        actor: "ai",
+        activity: "feedback",
+
+        skill: "draft_feedback",
+
+        inputs: {
+          problem: "{{inputs.problem}}",
+          draft: "{{vars.draft}}",
+        },
+
+        output: "feedback",
+      },
+
+      {
+        id: "answer",
+
+        actor: "ai",
+        activity: "generate",
+
+        skill: "final_answer",
+
+        enabled: true,
+
+        inputs: {
+          problem: "{{inputs.problem}}",
+          draft: "{{vars.draft}}",
+        },
+
+        output: "finalAnswer",
+      },
     ],
+
+    outputs: {
+      answer: "{{vars.finalAnswer}}",
+    },
   },
+
   {
-    id: 'long-draft',
-    name: 'Long draft mode',
-    kind: 'prebuilt',
-    description: 'Write a substantial draft before AI feedback unlocks.',
-    finalAnswerPolicy: 'allowed',
+    version: "1.0.0",
+
+    id: "long-draft",
+    name: "Long Draft Mode",
+    kind: "prebuilt",
+    description:
+      "Write a substantial draft before AI feedback unlocks.",
+
+    inputs: ["problem"],
+
+    variables: {
+      draft: null,
+      feedback: null,
+      finalAnswer: null,
+    },
+
     steps: [
       {
-        id: 'draft',
-        type: 'contribution',
-        prompt: 'Write a full draft attempt at the task.',
-        contributionKind: 'draft',
-        minCharacters: 600,
+        id: "draft",
+
+        actor: "learner",
+        activity: "write",
+
+        instruction:
+          "Write a full draft attempt at the task.",
+
+        validation: {
+          minCharacters: 600,
+        },
+
+        output: "draft",
       },
-      { id: 'feedback', type: 'ai_feedback', feedbackMode: 'draft_feedback' },
-      { id: 'answer', type: 'final_answer', allowed: true },
+
+      {
+        id: "feedback",
+
+        actor: "ai",
+        activity: "feedback",
+
+        skill: "draft_feedback",
+
+        inputs: {
+          draft: "{{vars.draft}}",
+          problem: "{{inputs.problem}}",
+        },
+
+        output: "feedback",
+      },
+
+      {
+        id: "answer",
+
+        actor: "ai",
+        activity: "generate",
+
+        skill: "final_answer",
+
+        enabled: true,
+
+        inputs: {
+          draft: "{{vars.draft}}",
+          problem: "{{inputs.problem}}",
+        },
+
+        output: "finalAnswer",
+      },
     ],
+
+    outputs: {
+      answer: "{{vars.finalAnswer}}",
+    },
   },
 ];

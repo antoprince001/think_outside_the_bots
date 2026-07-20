@@ -11,18 +11,49 @@ function buildWorkflow(name, minimumCharacters) {
     name,
     kind: 'custom',
     description: 'Your saved cognitive-friction workflow.',
-    finalAnswerPolicy: 'allowed',
+    inputs: ['problem'],
+    variables: {
+      draft: null,
+      feedback: null,
+      finalAnswer: null,
+    },
     steps: [
       {
         id: 'draft',
-        type: 'contribution',
-        prompt: 'Write your first attempt.',
-        contributionKind: 'draft',
-        minCharacters: Number(minimumCharacters),
+        actor: 'learner',
+        activity: 'write',
+        instruction: 'Write your first attempt.',
+        validation: {
+          minCharacters: Number(minimumCharacters),
+        },
+        output: 'draft',
       },
-      { id: 'feedback', type: 'ai_feedback', feedbackMode: 'draft_feedback' },
-      { id: 'answer', type: 'final_answer', allowed: true },
+      {
+        id: 'feedback',
+        actor: 'ai',
+        activity: 'feedback',
+        skill: 'draft_feedback',
+        inputs: {
+          problem: '{{inputs.problem}}',
+          draft: '{{vars.draft}}',
+        },
+        output: 'feedback',
+      },
+      {
+        id: 'answer',
+        actor: 'ai',
+        activity: 'generate',
+        skill: 'final_answer',
+        inputs: {
+          problem: '{{inputs.problem}}',
+          draft: '{{vars.draft}}',
+        },
+        output: 'finalAnswer',
+      },
     ],
+    outputs: {
+      answer: '{{vars.finalAnswer}}',
+    },
   };
 }
 

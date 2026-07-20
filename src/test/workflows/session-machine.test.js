@@ -9,7 +9,7 @@ describe('session-machine', () => {
   it('starts a session at its first step', () => {
     const session = createSession({ task: 'Explain recursion', workflow: feynman, connection: null });
     expect(session.currentStepIndex).toBe(0);
-    expect(currentStep(session).type).toBe('contribution');
+    expect(currentStep(session).activity).toBe('write');
     expect(session.status).toBe('active');
   });
 
@@ -27,14 +27,14 @@ describe('session-machine', () => {
     expect(after.currentStepIndex).toBe(1);
     expect(after.contributions[0].status).toBe('submitted');
     expect(after.contributions[0].body).toBe(explanation);
-    expect(currentStep(after).type).toBe('ai_feedback');
+    expect(currentStep(after).activity).toBe('feedback');
   });
 
   it('completes once the final step is passed', () => {
     let session = createSession({ task: 'x', workflow: feynman, connection: null });
     session = submit(session, 'a'.repeat(150));
-    session = advance(session); // past ai_feedback
-    session = advance(session); // past final_answer
+    session = advance(session); // past feedback
+    session = advance(session); // past generate
     expect(session.status).toBe('complete');
     expect(session.completedAt).toBeTruthy();
   });
@@ -43,7 +43,7 @@ describe('session-machine', () => {
     let session = createSession({ task: 'x', workflow: freeze, connection: null });
     session = submit(session, 'first attempt');
     const step = currentStep(session);
-    expect(step.type).toBe('freeze');
+    expect(step.activity).toBe('timer');
     const startedMs = new Date(session.freezeStartedAt).getTime();
     const secsLeft = remaining(step, session.freezeStartedAt, startedMs + 60_000);
     expect(secsLeft).toBe(120); // 180s duration - 60s elapsed, survives reload since it's wall-clock based

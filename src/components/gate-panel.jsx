@@ -1,5 +1,6 @@
 import { Timer } from 'lucide-react';
 import { remaining } from '../workflows/session-machine';
+import { minCharactersFor } from '../workflows/workflow-model';
 
 function formatCountdown(secondsLeft) {
   const minutes = Math.floor(secondsLeft / 60);
@@ -10,8 +11,8 @@ function formatCountdown(secondsLeft) {
 function actionLabel({ step, isLocked, secondsLeft, isAiLoading }) {
   if (isAiLoading) return 'Getting feedback...';
   if (isLocked) return formatCountdown(secondsLeft);
-  if (step?.type === 'ai_feedback') return 'Get feedback';
-  if (step?.type === 'final_answer') return 'Unlock worked explanation';
+  if (step?.activity === 'feedback') return 'Get feedback';
+  if (step?.activity === 'generate') return 'Unlock worked explanation';
   return 'Submit my thinking';
 }
 
@@ -25,20 +26,21 @@ function actionLabel({ step, isLocked, secondsLeft, isAiLoading }) {
  * reload cannot shorten the enforced wait — see workflows/session-machine.js.
  */
 export function GatePanel({ session, step, draft, onDraftChange, feedback, now, onAction, isAiLoading = false }) {
-  const isFreezeStep = step?.type === 'freeze';
-  const secondsLeft = isFreezeStep
+  const isTimerStep = step?.activity === 'timer';
+  const secondsLeft = isTimerStep
     ? remaining(step, session.freezeStartedAt || session.startedAt, now)
     : 0;
-  const isLocked = isFreezeStep && secondsLeft > 0;
-  const showsDraftArea = step?.type === 'contribution' || isFreezeStep;
-  const charactersRemaining = step?.minCharacters
-    ? Math.max(0, step.minCharacters - draft.trim().length)
+  const minimumCharacters = minCharactersFor(step);
+  const isLocked = isTimerStep && secondsLeft > 0;
+  const showsDraftArea = step?.activity === 'write' || isTimerStep;
+  const charactersRemaining = minimumCharacters
+    ? Math.max(0, minimumCharacters - draft.trim().length)
     : null;
-  const isBelowMinimum = step?.type === 'contribution' && draft.trim().length < step.minCharacters;
+  const isBelowMinimum = step?.activity === 'write' && draft.trim().length < minimumCharacters;
 
   return (
     <>
-      {isFreezeStep && (
+      {isTimerStep && (
         <p className="timer" role="status">
           <Timer size={18} />
           {formatCountdown(secondsLeft)} — keep drafting; AI stays paused.

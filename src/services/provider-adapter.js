@@ -6,23 +6,12 @@
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogle } from '@ai-sdk/google';
+import { AI_SKILLS } from '../workflows/workflow-model';
 
 export const PROVIDERS = [
   { id: 'openai', label: 'OpenAI', models: ['gpt-5.4-mini', 'gpt-5.4'] },
   { id: 'google', label: 'Google Gemini', models: ['gemini-2.5-flash'] },
 ];
-
-const FEEDBACK_INSTRUCTIONS = {
-  socratic: 'Ask one concise Socratic follow-up question. Do not provide a direct solution.',
-  feynman: 'Give concise gap feedback on the student explanation. Do not provide the final solution.',
-  default:
-    'Give concise feedback on the student draft. Do not provide a direct solution unless ' +
-    'explicitly asked after the workflow completes.',
-};
-
-function instructionFor(workflowId) {
-  return FEEDBACK_INSTRUCTIONS[workflowId] ?? FEEDBACK_INSTRUCTIONS.default;
-}
 
 function providerIdFor(connection) {
   if (connection?.provider) return connection.provider;
@@ -36,15 +25,24 @@ export async function testConnection(_connection, key) {
   return { status: 'valid' };
 }
 
-export async function requestFeedback({ connection, key, task, workflow, contributions }) {
+function promptFor({ task, inputs = {}, contributions = [] }) {
+  const inputLines = Object.entries(inputs).map(([key, value]) => `${key}: ${value}`).join('\n');
+  const latestContribution = contributions.at(-1)?.body ?? '';
+  return [
+    `Problem: ${task}`,
+    inputLines && `Workflow inputs:\n${inputLines}`,
+    latestContribution && `Latest learner work: ${latestContribution}`,
+  ].filter(Boolean).join('\n\n');
+}
+
+export async function requestFeedback({ connection, key, task, workflow, step, inputs, contributions }) {
   if (!key) {
     throw new Error('Model key is unavailable.');
   }
 
-  const latestContribution = contributions.at(-1)?.body ?? '';
-  const instruction = instructionFor(workflow.id);
+  const skill = step?.skill ?? (workflow.id === 'socratic' ? 'socratic_question' : 'draft_feedback');
+  const instruction = AI_SKILLS[skill] ?? AI_SKILLS.draft_feedback;
   const providerId = providerIdFor(connection);
-  console.log('Inside requestFeedback')
   try {
     let result;
     if (providerId === 'openai') {
@@ -52,27 +50,18 @@ export async function requestFeedback({ connection, key, task, workflow, contrib
       result = await generateText({
         model: openai(connection.model),
         system: instruction,
-        prompt: `Task: ${task}\nStudent work: ${latestContribution}`,
+        prompt: promptFor({ task, inputs, contributions }),
         maxOutputTokens: 300,
       });
     } else if (providerId === 'google') {
-        console.log(instruction)
-        console.log(task)
-        console.log(latestContribution)
-
       const google = createGoogle({ apiKey: key });
       result = await generateText({
         model: google('gemini-2.5-flash'),
         system: instruction,
-        prompt: `Task: ${task}\nStudent work: ${latestContribution}`,
+        prompt: promptFor({ task, inputs, contributions }),
         maxOutputTokens: 300,
       });
-      // result = await generateText({
-      //   model: google('gemini-2.5-flash'),
-      //   prompt: 'Write a vegetarian lasagna recipe for 4 people.',
-      // });
     } else {
-      console.log('Unsuported provider')
       throw new Error('Unsupported provider.');
     }
 
@@ -81,7 +70,7 @@ export async function requestFeedback({ connection, key, task, workflow, contrib
       throw new Error('Provider returned no feedback.');
     }
 
-    return { kind: workflow.id === 'socratic' ? 'question' : 'feedback', content };
+    return { kind: step?.activity === 'generate' ? 'final_answer' : 'feedback', content };
   } catch {
     throw new Error('Provider request failed.');
   }

@@ -3,6 +3,7 @@ import { LogOut } from 'lucide-react';
 import { getKey } from '../services/credential-store';
 import { requestFeedback } from '../services/provider-adapter';
 import { advance, currentStep, remaining, submit } from '../workflows/session-machine';
+import { resolveStepInputs } from '../workflows/workflow-model';
 import { uid } from '../utils/uid';
 import { GatePanel } from './gate-panel';
 import { SessionTrail } from './session-trail';
@@ -23,12 +24,12 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
   const [isAiLoading, setIsAiLoading] = useState(false);
 
   const step = currentStep(session);
-  const isFrozenStep = step?.type === 'freeze';
-  const freezeSecondsLeft = isFrozenStep
+  const isTimerStep = step?.activity === 'timer';
+  const freezeSecondsLeft = isTimerStep
     ? remaining(step, session.freezeStartedAt || session.startedAt, now)
     : 0;
 
-  async function requestAiFeedback() {
+  async function requestAiActivity() {
     if (isAiLoading) return;
     // The session snapshot is the source of truth for the selected model. The
     // live connection can be absent after a local-store refresh or deletion,
@@ -43,17 +44,22 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
         key: getKey(connectionId),
         task: session.task,
         workflow: session.workflowSnapshot,
+        step,
+        inputs: resolveStepInputs(step, session),
         contributions: session.contributions,
       });
       const feedbackRecord = {
         id: uid(),
         kind: result.kind,
         content: result.content,
+        stepId: step.id,
+        output: step.output,
         createdAt: new Date().toISOString(),
       };
       onSessionChange(advance({
         ...session,
         feedbacks: [...(session.feedbacks ?? []), feedbackRecord],
+        variables: { ...(session.variables ?? {}), ...(step.output ? { [step.output]: result.content } : {}) },
       }));
     } catch {
       onSessionChange({ ...session, status: 'recoverable_error' });
@@ -67,33 +73,40 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
       id: uid(),
       kind: 'final_answer',
       content: FINAL_ANSWER_MESSAGE,
+      stepId: step.id,
+      output: step.output,
       createdAt: new Date().toISOString(),
     };
     onSessionChange({
       ...advance({
         ...session,
         feedbacks: [...(session.feedbacks ?? []), feedbackRecord],
+        variables: { ...(session.variables ?? {}), ...(step.output ? { [step.output]: FINAL_ANSWER_MESSAGE } : {}) },
       }),
       status: 'complete',
     });
   }
 
   function handleAction() {
-    if (isFrozenStep) {
+    if (isTimerStep) {
       if (freezeSecondsLeft > 0) return;
       onSessionChange(advance(session));
       return;
     }
-    if (step?.type === 'contribution') {
+    if (step?.activity === 'write') {
       onSessionChange(submit(session, draft));
       return;
     }
-    if (step?.type === 'ai_feedback') {
-      requestAiFeedback();
+    if (step?.activity === 'feedback') {
+      requestAiActivity();
       return;
     }
-    if (step?.type === 'final_answer') {
-      revealFinalAnswer();
+    if (step?.activity === 'generate') {
+      if (step.actor === 'ai' && step.skill) {
+        requestAiActivity();
+      } else {
+        revealFinalAnswer();
+      }
     }
   }
 
@@ -110,7 +123,7 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
           <LogOut size={16} /> Exit
         </button>
       </div>
-      <h1>{step?.prompt || 'You built a path.'}</h1>
+      <h1>{step?.instruction || 'You built a path.'}</h1>
 
       <SessionTrail session={session} />
 

@@ -1,14 +1,4 @@
 fileignoreconfig:
-- filename: pnpm-lock.yaml
-  checksum: f60030758fcbc77b76577261d203a55f5ff6410a95ac97cde2b6ea4d37b13d02
-- filename: src/test/components/session-shell.test.jsx
-  checksum: 66128c533fccdc2e09eb0a10e31bdbdf36dba36a06b4e0a4ca1b6f2e811e9b24
-- filename: src/test/components/model-connections.test.jsx
-  checksum: 5f0c390071a1df0f41049c506718b8eee6fba4c72888d889c3fbbef268eea8aa
-- filename: src/components/model-connections.jsx
-  checksum: 1c27f51e99eda33a27a0e00e11340e8ce6fa0e5d3808e9d4fa64a5bfa3107a03
-- filename: src/components/session-shell.jsx
-  checksum: 6f48d2b3c770b80389fb2af97c9c4a0cfe138713bf0f8d33d9598b5436645bdb
-- filename: src/test/services/provider-adapter.test.js
-  checksum: 00e6f55245f9951702ca54feaa8988e97cf94282ad435dbf80c919ca7a71e3e0
+- filename: src/styles.css
+  checksum: e10df5c9aa1a8836223918f1ab9e7464b0369c8b13200c6bc0b08c165a3485af
 version: ""

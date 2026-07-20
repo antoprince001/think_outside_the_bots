@@ -19,7 +19,7 @@ function baseSession(workflow, overrides = {}) {
 
 describe('GatePanel', () => {
   it('renders freeze time as visible text, not color alone', () => {
-    const step = freeze.steps.find((s) => s.type === 'freeze');
+    const step = freeze.steps.find((s) => s.activity === 'timer');
     const session = baseSession(freeze);
     const now = new Date('2026-07-20T10:01:00Z').getTime();
     render(
@@ -29,7 +29,7 @@ describe('GatePanel', () => {
   });
 
   it('locks the action button while freeze time remains', () => {
-    const step = freeze.steps.find((s) => s.type === 'freeze');
+    const step = freeze.steps.find((s) => s.activity === 'timer');
     const session = baseSession(freeze);
     const now = new Date('2026-07-20T10:00:30Z').getTime();
     render(
@@ -39,7 +39,7 @@ describe('GatePanel', () => {
   });
 
   it('unlocks the action button once the freeze duration has fully elapsed', () => {
-    const step = freeze.steps.find((s) => s.type === 'freeze');
+    const step = freeze.steps.find((s) => s.activity === 'timer');
     const session = baseSession(freeze);
     const now = new Date('2026-07-20T10:03:01Z').getTime(); // 181s > 180s duration
     render(
@@ -49,7 +49,7 @@ describe('GatePanel', () => {
   });
 
   it('derives remaining time from the persisted freeze start, so a later "now" never resets it', () => {
-    const step = freeze.steps.find((s) => s.type === 'freeze');
+    const step = freeze.steps.find((s) => s.activity === 'timer');
     const session = baseSession(freeze); // freezeStartedAt fixed regardless of when the component re-renders
     const laterNow = new Date('2026-07-20T10:02:00Z').getTime();
     render(
@@ -59,7 +59,7 @@ describe('GatePanel', () => {
   });
 
   it('shows the remaining character count for the long-draft threshold', () => {
-    const step = longDraft.steps.find((s) => s.type === 'contribution');
+    const step = longDraft.steps.find((s) => s.activity === 'write');
     const session = baseSession(longDraft);
     render(
       <GatePanel
@@ -76,7 +76,7 @@ describe('GatePanel', () => {
   });
 
   it('keeps the action disabled below the long-draft minimum and enables it once met', () => {
-    const step = longDraft.steps.find((s) => s.type === 'contribution');
+    const step = longDraft.steps.find((s) => s.activity === 'write');
     const session = baseSession(longDraft);
     const { rerender } = render(
       <GatePanel
@@ -95,7 +95,7 @@ describe('GatePanel', () => {
       <GatePanel
         session={session}
         step={step}
-        draft={'a'.repeat(step.minCharacters)}
+        draft={'a'.repeat(step.validation.minCharacters)}
         onDraftChange={vi.fn()}
         feedback=""
         now={Date.now()}
