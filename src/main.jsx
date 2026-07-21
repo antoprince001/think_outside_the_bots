@@ -9,6 +9,7 @@ import { TaskSetup } from './components/task-setup';
 import { WorkflowBuilder } from './components/workflow-builder';
 import { getKey } from './services/credential-store';
 import { load, update } from './services/local-store';
+import { suggestAdaptiveWorkflowSequence } from './services/provider-adapter';
 import { createSession } from './workflows/session-machine';
 import { presets } from './workflows/presets';
 import { withTimerDuration } from './workflows/workflow-model';
@@ -62,14 +63,32 @@ function App() {
     });
   }
 
-  function startSession() {
+  async function startSession() {
     if (!task.trim() || !hasReadyConnection) return;
     const workflow = selectedWorkflow.id === 'freeze'
       ? withTimerDuration(selectedWorkflow, freezeDurationSeconds)
       : selectedWorkflow;
     const selectedWorkflowIds = (workflowStrategy.selectedWorkflowIds ?? []).filter(Boolean);
+    const fallbackWorkflowIds = selectedWorkflowIds.length > 0 ? selectedWorkflowIds : [selectedWorkflow.id];
+    let orderedWorkflowIds = fallbackWorkflowIds;
+
+    if (workflowStrategy.strategyMode === 'adaptive') {
+      try {
+        orderedWorkflowIds = await suggestAdaptiveWorkflowSequence({
+          connection: selectedConnection,
+          key: getKey(selectedConnection.id),
+          task: task.trim(),
+          selectionPrompt: workflowStrategy.selectionPrompt ?? '',
+          workflowIds: fallbackWorkflowIds,
+          workflows,
+        });
+      } catch {
+        orderedWorkflowIds = fallbackWorkflowIds;
+      }
+    }
+
     const resolvedWorkflow = (workflowStrategy.strategyMode === 'multiple' || workflowStrategy.strategyMode === 'adaptive')
-      ? buildCombinedWorkflow(workflows, { ...workflowStrategy, selectedWorkflowIds: selectedWorkflowIds.length > 0 ? selectedWorkflowIds : [selectedWorkflow.id] })
+      ? buildCombinedWorkflow(workflows, { ...workflowStrategy, selectedWorkflowIds: orderedWorkflowIds })
       : workflow;
     const configuredWorkflow = {
       ...resolvedWorkflow,
@@ -78,7 +97,7 @@ function App() {
         reaskEnabled: true,
         reaskLimit: 3,
         strategyMode: workflowStrategy.strategyMode,
-        workflowIds: selectedWorkflowIds.length > 0 ? selectedWorkflowIds : [selectedWorkflow.id],
+        workflowIds: orderedWorkflowIds,
         approaches: workflowStrategy.strategyMode === 'adaptive' ? workflowStrategy.approaches : [],
         selectionPrompt: workflowStrategy.strategyMode === 'adaptive' ? workflowStrategy.selectionPrompt : '',
       },

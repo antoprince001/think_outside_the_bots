@@ -4,6 +4,15 @@ import { SessionReview } from '../../components/session-review';
 import { createSession } from '../../workflows/session-machine';
 import { presets } from '../../workflows/presets';
 
+const { mockDownloadTextFile } = vi.hoisted(() => ({
+  mockDownloadTextFile: vi.fn(),
+}));
+
+vi.mock('../../utils/export-text', () => ({
+  downloadTextFile: mockDownloadTextFile,
+  safeFilename: (name, prefix) => `${prefix}-${name}`.replace(/\s+/g, '-'),
+}));
+
 const feynman = presets.find((p) => p.id === 'feynman');
 
 describe('SessionReview', () => {
@@ -42,6 +51,13 @@ describe('SessionReview', () => {
     expect(screen.getByLabelText('Learning trail')).toHaveTextContent('AI feedback text');
   });
 
+  it('renders learning trail entries as collapsible details', () => {
+    const session = createSession({ task: 'Explain recursion', workflow: feynman, connection: null });
+    render(<SessionReview session={session} />);
+    const questionSummary = screen.getByText('Question').closest('details');
+    expect(questionSummary).not.toBeNull();
+  });
+
   it('shows whether the session is complete or still in progress', () => {
     const session = createSession({ task: 'x', workflow: feynman, connection: null });
     render(<SessionReview session={{ ...session, status: 'complete' }} />);
@@ -56,12 +72,47 @@ describe('SessionReview', () => {
     expect(onExit).toHaveBeenCalledTimes(1);
   });
 
-  it('exports the session review as a text file', () => {
+  it('exports the session review in chronological conversation order', () => {
     const session = createSession({ task: 'Explain recursion', workflow: feynman, connection: null });
-    session.contributions.push({ id: '1', kind: 'explanation', body: 'My explanation text' });
+    session.startedAt = '2024-01-01T00:00:01.000Z';
+    session.contributions.push({
+      id: '1',
+      kind: 'explanation',
+      body: 'My explanation text',
+      createdAt: '2024-01-01T00:00:02.000Z',
+    });
+    session.feedbacks.push({
+      id: 'f1',
+      kind: 'feedback',
+      content: 'AI feedback text',
+      createdAt: '2024-01-01T00:00:03.000Z',
+    });
     render(<SessionReview session={session} onExit={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /export/i }));
-    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:review');
+
+    expect(mockDownloadTextFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('- Question: Explain recursion\n- Your explanation: My explanation text\n- AI feedback: AI feedback text'),
+      }),
+    );
+  });
+
+  it('interleaves user and AI turns by timestamp when available', () => {
+    const session = createSession({ task: 'Explain recursion', workflow: feynman, connection: null });
+    session.startedAt = '2024-01-01T00:00:00.000Z';
+    session.contributions.push(
+      { id: 'c1', kind: 'explanation', body: 'First draft', createdAt: '2024-01-01T00:00:01.000Z' },
+      { id: 'c2', kind: 'explanation', body: 'Second draft', createdAt: '2024-01-01T00:00:03.000Z' },
+    );
+    session.feedbacks.push({ id: 'f1', kind: 'feedback', content: 'First feedback', createdAt: '2024-01-01T00:00:02.000Z' });
+
+    render(<SessionReview session={session} onExit={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /export/i }));
+
+    expect(mockDownloadTextFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('- Question: Explain recursion\n- Your explanation: First draft\n- AI feedback: First feedback\n- Your explanation: Second draft'),
+      }),
+    );
   });
 });

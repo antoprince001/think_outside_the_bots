@@ -10,7 +10,7 @@ vi.mock('ai', () => ({ generateText }));
 vi.mock('@ai-sdk/openai', () => ({ createOpenAI }));
 vi.mock('@ai-sdk/google', () => ({ createGoogle }));
 
-import { testConnection, requestFeedback, PROVIDERS } from '../../services/provider-adapter';
+import { testConnection, requestFeedback, suggestAdaptiveWorkflowSequence, PROVIDERS } from '../../services/provider-adapter';
 
 describe('provider-adapter', () => {
   beforeEach(() => {
@@ -91,6 +91,28 @@ describe('provider-adapter', () => {
     expect(createOpenAI).not.toHaveBeenCalled();
     expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
       model: { apiKey: 'google-secret', model: 'gemini-2.5-flash' },
+    }));
+  });
+
+  it('suggests an adaptive workflow sequence from the model', async () => {
+    generateText.mockResolvedValue({ text: '["socratic","feynman"]' });
+
+    const result = await suggestAdaptiveWorkflowSequence({
+      connection: { provider: 'openai', model: 'gpt-4.1-mini' },
+      key: 'sk-test',
+      task: 'Explain recursion',
+      selectionPrompt: 'Start with Socratic questions then reinforce with Feynman.',
+      workflowIds: ['feynman', 'socratic'],
+      workflows: [
+        { id: 'feynman', name: 'Feynman', description: 'Explain it simply.' },
+        { id: 'socratic', name: 'Socratic', description: 'Ask probing questions.' },
+      ],
+    });
+
+    expect(result).toEqual(['socratic', 'feynman']);
+    expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
+      model: { apiKey: 'sk-test', model: 'gpt-4.1-mini' },
+      maxOutputTokens: 300,
     }));
   });
 

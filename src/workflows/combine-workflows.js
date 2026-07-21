@@ -2,10 +2,42 @@ function isFinalAnswerStep(step) {
   return step?.activity === 'generate' || step?.skill === 'final_answer' || step?.type === 'final_answer';
 }
 
-export function buildCombinedWorkflow(workflows, strategyState) {
+function scoreWorkflowForAdaptiveMode(workflow, strategyState) {
+  const promptText = [strategyState?.selectionPrompt, strategyState?.task].filter(Boolean).join(' ').toLowerCase();
+  if (!promptText.trim()) return 0;
+
+  const haystack = [workflow?.name, workflow?.description, workflow?.id].filter(Boolean).join(' ').toLowerCase();
+  const promptTokens = promptText.split(/[^a-z0-9]+/).filter(Boolean);
+  const workflowTokens = haystack.split(/[^a-z0-9]+/).filter(Boolean);
+  const workflowSet = new Set(workflowTokens);
+
+  let score = 0;
+  promptTokens.forEach((token) => {
+    if (token.length < 3) return;
+    if (workflowSet.has(token)) score += 3;
+    else if (haystack.includes(token)) score += 1;
+  });
+
+  return score;
+}
+
+function orderedSelectedWorkflows(workflows, strategyState) {
   const selectedWorkflows = (strategyState?.selectedWorkflowIds ?? [])
     .map((workflowId) => workflows.find((workflow) => workflow.id === workflowId))
     .filter(Boolean);
+
+  if (strategyState?.strategyMode === 'adaptive' && selectedWorkflows.length > 1) {
+    const promptText = [strategyState?.selectionPrompt, strategyState?.task].filter(Boolean).join(' ').trim();
+    if (promptText) {
+      return [...selectedWorkflows].sort((left, right) => scoreWorkflowForAdaptiveMode(right, strategyState) - scoreWorkflowForAdaptiveMode(left, strategyState));
+    }
+  }
+
+  return selectedWorkflows;
+}
+
+export function buildCombinedWorkflow(workflows, strategyState) {
+  const selectedWorkflows = orderedSelectedWorkflows(workflows, strategyState);
 
   if (selectedWorkflows.length <= 1) {
     return selectedWorkflows[0] ?? workflows[0] ?? null;

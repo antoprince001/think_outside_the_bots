@@ -42,6 +42,92 @@ function promptFor({ task, step, inputs = {}, contributions = [], feedbacks = []
   ].filter(Boolean).join('\n\n');
 }
 
+function parseAdaptiveSequence(responseText, workflowIds = []) {
+  const rawText = String(responseText ?? '').trim();
+  if (!rawText) return workflowIds;
+
+  try {
+    const parsed = JSON.parse(rawText);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+        .filter((value) => workflowIds.includes(value) || workflowIds.some((workflowId) => workflowId.toLowerCase() === value.toLowerCase()));
+    }
+  } catch {
+    // Fall through to a looser parse below.
+  }
+
+  const arrayMatch = rawText.match(/\[(.*?)\]/s);
+  if (arrayMatch) {
+    try {
+      const parsed = JSON.parse(arrayMatch[0]);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((value) => String(value ?? '').trim())
+          .filter(Boolean)
+          .filter((value) => workflowIds.includes(value) || workflowIds.some((workflowId) => workflowId.toLowerCase() === value.toLowerCase()));
+      }
+    } catch {
+      // Ignore and fall back to the original order.
+    }
+  }
+
+  return workflowIds;
+}
+
+export async function suggestAdaptiveWorkflowSequence({ connection, key, task, selectionPrompt = '', workflowIds = [], workflows = [] }) {
+  const normalizedWorkflowIds = (workflowIds ?? []).filter(Boolean);
+  if (!key?.trim() || normalizedWorkflowIds.length <= 1) {
+    return normalizedWorkflowIds;
+  }
+
+  const availableMethods = (workflows ?? [])
+    .filter((workflow) => normalizedWorkflowIds.includes(workflow.id))
+    .map((workflow) => `- ${workflow.id}: ${workflow.name}${workflow.description ? ` — ${workflow.description}` : ''}`)
+    .join('\n');
+
+  const providerId = providerIdFor(connection);
+  try {
+    const prompt = [
+      'You are choosing the order of learning methods for a learner.',
+      `Learner task: ${task}`,
+      `Adaptive guidance: ${selectionPrompt || 'Choose the most sensible order for the learner.'}`,
+      'Available methods:',
+      availableMethods,
+      'Return only a JSON array of method IDs in the recommended order. Example: ["socratic","feynman"]',
+    ].join('\n\n');
+
+    let result;
+    if (providerId === 'openai') {
+      const openai = createOpenAI({ apiKey: key });
+      result = await generateText({
+        model: openai(`${connection.model}`),
+        system: 'Choose a sensible sequence for the learner. Return only JSON.',
+        prompt,
+        maxOutputTokens: 300,
+        maxRetries: 1,
+      });
+    } else if (providerId === 'google') {
+      const google = createGoogle({ apiKey: key });
+      result = await generateText({
+        model: google(`${connection.model}`),
+        system: 'Choose a sensible sequence for the learner. Return only JSON.',
+        prompt,
+        maxOutputTokens: 300,
+        maxRetries: 1,
+      });
+    } else {
+      return normalizedWorkflowIds;
+    }
+
+    const orderedIds = parseAdaptiveSequence(result?.text, normalizedWorkflowIds);
+    return orderedIds.length > 0 ? orderedIds : normalizedWorkflowIds;
+  } catch {
+    return normalizedWorkflowIds;
+  }
+}
+
 export async function requestFeedback({ connection, key, task, workflow, step, inputs, contributions, feedbacks = [], reaskCount = 0 }) {
   if (!key) {
     throw new Error('Model key is unavailable.');
@@ -58,7 +144,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
       ? `${instruction} If the learner still needs another pass, ask a short follow-up question without revealing the answer.`
       : instruction;
 
-    const maxOutputTokens = step?.activity === 'generate' ? 2000 : 1500;
+    const maxOutputTokens = step?.activity === 'generate' ? 2000 : 500;
 
     if (providerId === 'openai') {
       const openai = createOpenAI({ apiKey: key });
@@ -67,6 +153,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
         system: systemInstruction,
         prompt,
         maxOutputTokens,
+        maxRetries: 1,
       });
     } else if (providerId === 'google') {
       const google = createGoogle({ apiKey: key });
@@ -75,6 +162,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
         system: systemInstruction,
         prompt,
         maxOutputTokens,
+        maxRetries: 1,
       });
     } else {
       throw new Error('Unsupported provider.');

@@ -31,4 +31,30 @@ describe('buildCombinedWorkflow', () => {
     expect(combined.steps.filter((step) => step.activity === 'generate')).toHaveLength(1);
     expect(combined.steps.at(-1).output).toContain('answer2');
   });
+
+  it('reorders selected workflows dynamically for adaptive mode based on the selection prompt', () => {
+    const workflows = [
+      {
+        id: 'feynman',
+        name: 'Feynman',
+        description: 'Explain it simply and check for gaps.',
+        steps: [{ id: 'a', actor: 'learner', activity: 'write', output: 'draft' }],
+      },
+      {
+        id: 'socratic',
+        name: 'Socratic',
+        description: 'Ask probing questions to help the learner reflect.',
+        steps: [{ id: 'b', actor: 'learner', activity: 'write', output: 'draft2' }],
+      },
+    ];
+
+    const combined = buildCombinedWorkflow(workflows, {
+      selectedWorkflowIds: ['feynman', 'socratic'],
+      strategyMode: 'adaptive',
+      selectionPrompt: 'Start with Socratic questions if the learner is stuck, then use Feynman to reinforce the idea.',
+    });
+
+    expect(combined.steps[0].output).toBe('socratic-draft2');
+    expect(combined.steps[1].output).toBe('feynman-draft');
+  });
 });

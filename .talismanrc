@@ -1,6 +1,4 @@
 fileignoreconfig:
-- filename: src/styles.css
-  checksum: e11dfb5469c57dd3b606d16856625f9f3e8fcb727145f2ee6fb18f0dfbdda22b
-- filename: src/components/workflow-picker.jsx
-  checksum: 4a67ca842ba745abc520914a79bc8ead2f3efd7504bf0536c42a0c9aee57c16e
+- filename: src/workflows/combine-workflows.js
+  checksum: 2271df4d5967bea5371e34e24931abcd95d3d53328e6578373d0be105a246b46
 version: ""

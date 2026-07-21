@@ -1,5 +1,5 @@
 import { Download, LogOut } from 'lucide-react';
-import { SessionTrail } from './session-trail';
+import { SessionTrail, trailItems } from './session-trail';
 import { downloadTextFile, safeFilename } from '../utils/export-text';
 
 const EVENT_LABELS = {
@@ -27,8 +27,7 @@ function sessionReviewText(session) {
     `Task: ${session.task}`,
     '',
     'Learning trail',
-    ...((session.contributions ?? []).map((item) => `- Your ${item.kind ?? 'work'}: ${item.body}`)),
-    ...((session.feedbacks ?? []).map((item) => `- ${item.kind === 'final_answer' ? 'Worked explanation' : 'AI feedback'}: ${item.content}`)),
+    ...trailItems(session).map((item) => `- ${item.label}: ${item.body}`),
     '',
     'Timeline',
     ...session.events.map((event) => `- ${labelFor(event)}: ${new Date(event.at).toLocaleString()}`),
