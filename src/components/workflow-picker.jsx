@@ -61,15 +61,17 @@ export function WorkflowPicker({ workflows, selectedId, selectedIds = [], mode =
             <div
               key={workflow.id}
               className={`mode-card ${isSelected ? 'selected' : ''}`}
-              data-selectable={mode === 'single' && selectedId !== workflow.id && selectedId ? 'disabled' : 'true'}
+              onClick={() => onSelect?.(workflow.id)}
             >
               <button
                 type="button"
                 role={isMultiMode ? 'checkbox' : 'radio'}
                 aria-checked={isSelected}
                 className="mode-select"
-                onClick={() => onSelect?.(workflow.id)}
-                disabled={mode === 'single' && selectedId !== workflow.id && selectedId}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSelect?.(workflow.id);
+                }}
               >
                 <div className="mode-card-header">
                   <strong>{workflow.name}</strong>
@@ -80,11 +82,17 @@ export function WorkflowPicker({ workflows, selectedId, selectedIds = [], mode =
                 <span>{workflowSummary(workflow)}</span>
               </button>
               <div className="mode-actions" aria-label={`${workflow.name} actions`}>
-                <button type="button" className="icon-button" onClick={() => onExport?.(workflow)} aria-label={`Export ${workflow.name}`}>
+                <button type="button" className="icon-button" onClick={(event) => {
+                  event.stopPropagation();
+                  onExport?.(workflow);
+                }} aria-label={`Export ${workflow.name}`}>
                   <Download size={15} />
                 </button>
                 {workflow.kind === 'custom' && (
-                  <button type="button" className="icon-button danger" onClick={() => onDelete?.(workflow.id)} aria-label={`Delete ${workflow.name}`}>
+                  <button type="button" className="icon-button danger" onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete?.(workflow.id);
+                  }} aria-label={`Delete ${workflow.name}`}>
                     <Trash2 size={15} />
                   </button>
                 )}

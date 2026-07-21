@@ -1,5 +1,5 @@
 import { Lock, Send } from 'lucide-react';
-import { WORKFLOW_APPROACH_DEFINITIONS, WORKFLOW_STRATEGY_MODES } from '../workflows/workflow-model';
+import { WORKFLOW_STRATEGY_MODES } from '../workflows/workflow-model';
 import { WorkflowPicker } from './workflow-picker';
 
 const FREEZE_OPTIONS = [
@@ -37,10 +37,7 @@ export function TaskSetup({
   const hasStrategySelection = (workflowStrategy?.strategyMode === 'multiple' || workflowStrategy?.strategyMode === 'adaptive')
     ? (workflowStrategy?.selectedWorkflowIds?.length ?? 0) > 0
     : true;
-  const hasSelectionPrompt = workflowStrategy?.strategyMode === 'adaptive'
-    ? (workflowStrategy?.selectionPrompt ?? '').trim().length > 0
-    : true;
-  const canStart = task.trim().length > 0 && hasReadyConnection && hasStrategySelection && hasSelectionPrompt;
+  const canStart = task.trim().length > 0 && hasReadyConnection && hasStrategySelection;
 
   return (
     <section className="setup">
@@ -60,24 +57,22 @@ export function TaskSetup({
         maxLength={5000}
       />
 
-      <div className="strategy-card strategy-dropdown-wrapper">
+      <h2>Pick your path</h2>
+      <div className="strategy-inline-picker">
         <label htmlFor="workflow-strategy-mode">Learning mode</label>
-        <select id="workflow-strategy-mode" value={workflowStrategy?.strategyMode ?? 'single'} onChange={(event) => onStrategyModeChange?.(event.target.value)} aria-label="Learning mode" className="strategy-dropdown">
+        <select id="workflow-strategy-mode" value={workflowStrategy?.strategyMode ?? 'single'} onChange={(event) => onStrategyModeChange?.(event.target.value)} aria-label="Learning mode" className="strategy-dropdown compact-strategy-dropdown">
           {WORKFLOW_STRATEGY_MODES.map((option) => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </select>
-        <p className="flow-hint" role="note">
-          <br />
+        <p className="flow-hint compact-flow-hint" role="note">
           {workflowStrategy?.strategyMode === 'multiple'
-            ? '✦ Select multiple workflows in sequence—the order you click becomes your learning path.'
+            ? 'Select multiple workflows in sequence.'
             : workflowStrategy?.strategyMode === 'adaptive'
-              ? '✦ Select starting workflows and AI will choose the next steps based on your progress.'
-              : '✦ Choose one workflow to guide your session from start to finish.'}
+              ? 'Select starting workflows for AI guidance.'
+              : 'Choose one workflow to guide your session.'}
         </p>
       </div>
-
-      <h2>Pick your path</h2>
       <WorkflowPicker
         workflows={workflows}
         selectedId={selectedWorkflowId}
@@ -91,16 +86,8 @@ export function TaskSetup({
       {workflowStrategy?.strategyMode === 'adaptive' && (
         <div className="strategy-card" style={{ border: '1px solid #d7dce5', borderRadius: 12, padding: 12, marginTop: 12, background: '#f7f9fc' }}>
           <strong>Adaptive guidance</strong>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
-            {WORKFLOW_APPROACH_DEFINITIONS.map((approach) => (
-              <label key={approach.id} style={{ display: 'flex', alignItems: 'center', gap: 6, border: '1px solid #cbd5e1', borderRadius: 999, padding: '6px 10px', background: '#fff' }}>
-                <input type="checkbox" aria-label={`Include ${approach.label}`} checked={(workflowStrategy?.approaches ?? []).includes(approach.id)} onChange={() => onStrategyApproachToggle?.(approach.id)} />
-                {approach.label}
-              </label>
-            ))}
-          </div>
           <label htmlFor="workflow-selection-prompt" style={{ display: 'block', marginTop: 8 }}>
-            How should AI choose the next path?
+            How should AI choose the next path? <span style={{ color: '#6e6876', fontWeight: 500 }}>(optional)</span>
             <textarea id="workflow-selection-prompt" value={workflowStrategy?.selectionPrompt ?? ''} onChange={(event) => onSelectionPromptChange?.(event.target.value)} placeholder="Example: start with Feynman, then pivot to Socratic if the learner is stuck." />
           </label>
         </div>
@@ -126,8 +113,7 @@ export function TaskSetup({
         </div>
       )}
 
-      {!hasStrategySelection && <p className="hint">Pick at least one approach before starting a hybrid or dynamic workflow.</p>}
-      {!hasSelectionPrompt && <p className="hint">Add a short selection prompt so AI can choose approaches dynamically.</p>}
+      {!hasStrategySelection && <p className="hint">Pick at least one workflow before starting a hybrid or dynamic workflow.</p>}
 
       <div className="notice">
         <Lock size={16} />

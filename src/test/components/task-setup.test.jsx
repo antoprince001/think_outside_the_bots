@@ -59,7 +59,13 @@ describe('TaskSetup', () => {
 
   it('selects a workflow when its card is clicked', () => {
     const props = renderSetup();
-    fireEvent.click(screen.getByText(presets[1].name));
+    fireEvent.click(screen.getByText(presets[1].name).closest('.mode-card'));
+    expect(props.onSelectWorkflow).toHaveBeenCalledWith(presets[1].id);
+  });
+
+  it('allows switching to another workflow in single mode when one is already selected', () => {
+    const props = renderSetup({ selectedWorkflowId: presets[0].id, selectedWorkflow: presets[0] });
+    fireEvent.click(screen.getByText(presets[1].name).closest('.mode-card'));
     expect(props.onSelectWorkflow).toHaveBeenCalledWith(presets[1].id);
   });
 
@@ -77,10 +83,11 @@ describe('TaskSetup', () => {
     expect(props.onFreezeDurationChange).toHaveBeenCalledWith(600);
   });
 
-  it('shows the learning mode selector near the top and the approach choices for adaptive flow', () => {
+  it('shows the learning mode selector near the top and keeps adaptive guidance prompt-only', () => {
     renderSetup({ workflowStrategy: { strategyMode: 'adaptive', approaches: ['feynman'], selectionPrompt: '' } });
     expect(screen.getByLabelText(/learning mode/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/include feynman/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/include feynman/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/how should ai choose the next path/i)).toBeInTheDocument();
   });
 
   it('shows export controls for preset workflows and delete controls for custom workflows', () => {
