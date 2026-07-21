@@ -2,6 +2,10 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 ENV PATH /app/node_modules/.bin:$PATH
+ARG VITE_DEFAULT_USERNAME
+ARG VITE_DEFAULT_PASSWORD
+ENV VITE_DEFAULT_USERNAME=$VITE_DEFAULT_USERNAME
+ENV VITE_DEFAULT_PASSWORD=$VITE_DEFAULT_PASSWORD
 
 # Install pnpm and system deps needed for native builds
 RUN apk add --no-cache curl python3 make g++

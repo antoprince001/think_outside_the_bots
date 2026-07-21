@@ -11,6 +11,20 @@ pnpm install
 pnpm dev
 ```
 
+By default, the app is protected by a simple login gate. Define the credentials in environment variables before starting the app:
+
+```bash
+export VITE_DEFAULT_USERNAME=admin
+export VITE_DEFAULT_PASSWORD=secret
+pnpm dev
+```
+
+You can also copy `.env.example` to `.env` and update the values:
+
+```bash
+cp .env.example .env
+```
+
 Open http://localhost:5174/ in your browser.
 
 ## Build for production
@@ -25,10 +39,10 @@ pnpm preview
 
 The repository includes a multi-stage `Dockerfile` that builds the app with `pnpm` and serves the static `dist` via `nginx`.
 
-Build the image:
+Build the image, passing login credentials as build args if needed:
 
 ```bash
-docker build -t think-outside-bots .
+docker build --build-arg VITE_DEFAULT_USERNAME=admin --build-arg VITE_DEFAULT_PASSWORD=secret -t think-outside-bots .
 ```
 
 Run the container (serves on port 80 inside the container):

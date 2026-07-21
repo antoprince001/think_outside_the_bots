@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Brain, KeyRound, LayoutList, Menu, Plus, X } from 'lucide-react';
 import { HomePage } from './components/home-page';
+import { LoginScreen } from './components/login-screen';
 import { ModelConnections } from './components/model-connections';
 import { SessionReview } from './components/session-review';
 import { SessionShell } from './components/session-shell';
 import { TaskSetup } from './components/task-setup';
 import { WorkflowBuilder } from './components/workflow-builder';
 import { getKey } from './services/credential-store';
+import { authConfigured, isLoggedIn, login, logout } from './services/auth-store';
 import { load, update } from './services/local-store';
 import { suggestAdaptiveWorkflowSequence } from './services/provider-adapter';
 import { createSession } from './workflows/session-machine';
@@ -36,6 +38,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [activePanel, setActivePanel] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(isLoggedIn());
   const now = useClock();
 
   const workflows = useMemo(() => [...presets, ...store.workflows], [store.workflows]);
@@ -148,6 +151,17 @@ function App() {
     setWorkflowStrategy((current) => ({ ...current, selectionPrompt: value }));
   }
 
+  function handleLogin(username, password) {
+    const authenticated = login(username, password);
+    setIsAuthenticated(authenticated);
+    return authenticated;
+  }
+
+  function handleLogout() {
+    logout();
+    setIsAuthenticated(false);
+  }
+
   function handleConnectionSelect(connectionId) {
     const selectedConnection = store.connections.find((connection) => connection.id === connectionId);
     if (!selectedConnection || !session) return;
@@ -185,6 +199,10 @@ function App() {
     if (selectedWorkflowId === workflowId) setSelectedWorkflowId(presets[0].id);
   }
 
+  if (!isAuthenticated) {
+    return <LoginScreen authConfigured={authConfigured} onLogin={handleLogin} />;
+  }
+
   return (
     <div className="app-shell">
       {!isSidebarOpen && (
@@ -212,6 +230,11 @@ function App() {
             <Plus size={ICON_SIZE_SMALL} /> Custom workflow
           </button>
         </nav>
+        <div style={{ marginTop: 'auto' }}>
+          <button type="button" className="secondary" onClick={handleLogout} style={{ width: '100%' }}>
+            Log out
+          </button>
+        </div>
       </aside>}
 
       <main>

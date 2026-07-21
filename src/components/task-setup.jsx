@@ -69,7 +69,7 @@ export function TaskSetup({
           {workflowStrategy?.strategyMode === 'multiple'
             ? 'Select multiple workflows in sequence.'
             : workflowStrategy?.strategyMode === 'adaptive'
-              ? 'Select starting workflows for AI guidance.'
+              ? 'Select workflows and let AI decide the path.'
               : 'Choose one workflow to guide your session.'}
         </p>
       </div>

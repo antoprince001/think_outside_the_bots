@@ -1,8 +1,4 @@
 fileignoreconfig:
 - filename: src/main.jsx
-  checksum: a3389015855438bb4afb12533c4eb694232b31840ba8a177db1b102ebc5bff66
-- filename: src/test/services/provider-adapter.test.js
-  checksum: 8b15848a2d77ad5a07e3575a8059747799c866a23cc13d91e4c5ed728960a18d
-- filename: src/services/provider-adapter.js
-  checksum: ca33cac66e08e08fbe4e66db799143d81ae76827752c36fdbd279214c633a78f
+  checksum: 33e241acc948cb129562b108402476cd2d9d9eb77c19eaec8a47267138c6ea3a
 version: ""
