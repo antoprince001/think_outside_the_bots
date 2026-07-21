@@ -12,7 +12,7 @@ import { load, update } from './services/local-store';
 import { createSession } from './workflows/session-machine';
 import { presets } from './workflows/presets';
 import { withTimerDuration } from './workflows/workflow-model';
-import { downloadTextFile, safeFilename } from './utils/export-text';
+import { downloadTextFile, safeFilename, workflowToYaml } from './utils/export-text';
 import './styles.css';
 
 const CLOCK_TICK_MS = 1000;
@@ -94,9 +94,10 @@ function App() {
   }
 
   function exportWorkflow(workflow) {
+    const yaml = workflowToYaml(workflow);
     downloadTextFile({
       filename: `${safeFilename(workflow.name, 'workflow')}.txt`,
-      content: JSON.stringify(workflow, null, 2),
+      content: yaml,
     });
   }
 

@@ -111,6 +111,12 @@ function buildWorkflow(name, nodes) {
     if (step.output) variables[step.output] = null;
   });
 
+  // Determine the last step that produced an output and expose it as
+  // the workflow-level `answer` output so downstream code can always
+  // reference `outputs.answer` for the final artifact.
+  const lastStepWithOutput = [...steps].slice().reverse().find((s) => s.output);
+  const outputs = lastStepWithOutput ? { answer: `{{vars.${lastStepWithOutput.output}}}` } : {};
+
   return {
     id: uid(),
     name,
@@ -119,7 +125,7 @@ function buildWorkflow(name, nodes) {
     inputs: ['problem'],
     variables,
     steps,
-    outputs: variables.finalAnswer ? { answer: '{{vars.finalAnswer}}' } : {},
+    outputs,
     configuration: {
       reaskEnabled: true,
       reaskLimit: 3,
@@ -205,6 +211,19 @@ export function WorkflowBuilder({ persist, onSaved }) {
     });
     return lines.join('\n');
   }, [workflow]);
+
+  function downloadYaml() {
+    const filename = `${workflow.name ? workflow.name.replace(/\s+/g, '_') : 'workflow'}.txt`;
+    const blob = new Blob([yamlExport], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <section className="panel workflow-editor">
@@ -300,7 +319,14 @@ export function WorkflowBuilder({ persist, onSaved }) {
       <div className="export-block">
         <h3>Export YAML</h3>
         <div className="export-card">
-          <pre>{yamlExport}</pre>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 8}}>
+            <pre style={{margin:0,flex:1,overflow:'auto'}}>{yamlExport}</pre>
+            <div style={{marginLeft:8}}>
+              <button type="button" className="secondary" onClick={downloadYaml} aria-label="Download workflow as text">
+                Download
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
