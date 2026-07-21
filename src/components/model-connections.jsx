@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { getKey, maskKey, removeKey, saveKey } from '../services/credential-store';
-import { PROVIDERS, testConnection } from '../services/provider-adapter';
+import { getDefaultConnectionPreferences, PROVIDERS, testConnection } from '../services/provider-adapter';
 import { uid } from '../utils/uid';
 
 const DEFAULT_PROVIDER = PROVIDERS[0];
+
+function providerLabelFor(providerId) {
+  return PROVIDERS.find((provider) => provider.id === providerId)?.label ?? DEFAULT_PROVIDER.label;
+}
 
 /**
  * Manages the student's personal model connections. Keys never leave this
@@ -12,10 +16,11 @@ const DEFAULT_PROVIDER = PROVIDERS[0];
  * they are not part of the persisted `store` object.
  */
 export function ModelConnections({ store, persist, onConnectionSelect }) {
-  const [label, setLabel] = useState('My OpenAI model');
-  const [providerId, setProviderId] = useState(DEFAULT_PROVIDER.id);
-  const [model, setModel] = useState(DEFAULT_PROVIDER.models[1]);
-  const [key, setKey] = useState('');
+  const defaultPreferences = getDefaultConnectionPreferences();
+  const [label, setLabel] = useState(`My ${providerLabelFor(defaultPreferences.providerId)} model`);
+  const [providerId, setProviderId] = useState(defaultPreferences.providerId);
+  const [model, setModel] = useState(defaultPreferences.model);
+  const [key, setKey] = useState(defaultPreferences.key);
   const [error, setError] = useState('');
   const [activeConnectionId, setActiveConnectionId] = useState(store.selectedConnection ?? null);
   const selectedProvider = PROVIDERS.find((provider) => provider.id === providerId) ?? DEFAULT_PROVIDER;
@@ -76,6 +81,11 @@ export function ModelConnections({ store, persist, onConnectionSelect }) {
     <section className="panel">
       <h2>Your models</h2>
       <p>Keys are session-only and are never saved with your learning history.</p>
+      {Boolean(import.meta.env.VITE_DEFAULT_MODEL || import.meta.env.VITE_DEFAULT_API_KEY || import.meta.env.VITE_DEFAULT_PROVIDER) && (
+        <p style={{ marginTop: '6px', color: '#5b5565' }}>
+          These values are prefilled from your .env defaults. You can still enter a different key or model before saving.
+        </p>
+      )}
 
       {store.connections.map((connection) => {
         const isSelected = activeConnectionId === connection.id;

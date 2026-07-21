@@ -14,6 +14,8 @@ export const PROVIDERS = [
   { id: 'google', label: 'Google Gemini', models: ['gemini-2.5-flash'] },
 ];
 
+const DEFAULT_PROVIDER = PROVIDERS[0];
+
 function providerIdFor(connection) {
   if (connection?.provider) return connection.provider;
   return PROVIDERS.find((provider) => provider.models.includes(connection?.model))?.id;
@@ -24,6 +26,27 @@ export async function testConnection(_connection, key) {
     return { status: 'invalid' };
   }
   return { status: 'valid' };
+}
+
+export function getDefaultConnectionPreferences(env = import.meta.env) {
+  const providerOverride = env?.VITE_DEFAULT_PROVIDER?.trim();
+  const requestedModel = env?.VITE_DEFAULT_MODEL?.trim();
+  const defaultKey = env?.VITE_DEFAULT_API_KEY?.trim();
+
+  const provider = providerOverride
+    ? (PROVIDERS.find((candidate) => candidate.id === providerOverride) ?? DEFAULT_PROVIDER)
+    : (PROVIDERS.find((candidate) => candidate.models.includes(requestedModel)) ?? DEFAULT_PROVIDER);
+
+  const fallbackModel = provider.models[Math.min(1, provider.models.length - 1)];
+  const model = requestedModel && provider.models.includes(requestedModel)
+    ? requestedModel
+    : fallbackModel;
+
+  return {
+    providerId: provider.id,
+    model,
+    key: defaultKey ?? '',
+  };
 }
 
 function promptFor({ task, step, inputs = {}, contributions = [], feedbacks = [] }) {
