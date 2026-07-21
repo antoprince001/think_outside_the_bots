@@ -18,3 +18,48 @@
 .dag-node.timer{display:block}
 .dag-node.timer .node-heading{align-items:center}
 .dag-node.timer .field-row{align-items:center}
+
+/* Enhanced strategy dropdown styling */
+.strategy-dropdown-wrapper{border:1px solid #d7dce5;border-radius:12px;padding:12px;margin-top:8px;margin-bottom:8px;background:linear-gradient(135deg,#f7f9fc 0%,#f0f3fa 100%);position:relative}
+.strategy-dropdown-wrapper label{display:block;font-size:13px;font-weight:600;color:#3e3864;margin-bottom:10px;letter-spacing:.3px}
+.strategy-dropdown{width:100%;padding:11px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#3e3864;font:inherit;font-size:14px;cursor:pointer;transition:border-color .2s,box-shadow .2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23292741' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.strategy-dropdown:hover{border-color:#8a77df;box-shadow:0 0 0 3px rgba(138,119,223,.08)}
+.strategy-dropdown:focus{outline:none;border-color:#8a77df;box-shadow:0 0 0 3px rgba(138,119,223,.15)}
+.strategy-dropdown option{padding:10px}
+
+/* Mode grid enhancements */
+.mode-grid-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 2px}
+.mode-guide{font-size:13px;font-weight:600;color:#6e6876;letter-spacing:.3px;text-transform:uppercase}
+.selection-count{display:inline-flex;align-items:center;justify-content:center;background:#8a77df;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;min-width:50px}
+
+/* Mode-specific grid layouts */
+.mode-grid-single{grid-template-columns:repeat(2,1fr)}
+.mode-grid-multiple{grid-template-columns:repeat(2,1fr)}
+.mode-grid-adaptive{grid-template-columns:repeat(2,1fr)}
+
+/* Enhanced mode cards */
+.mode-card{padding:18px;text-align:left;border:1px solid #e4dfd8;border-radius:12px;background:#fff;display:grid;gap:6px;position:relative;transition:all .25s ease}
+.mode-card.selected{outline:3px solid #8a77df;outline-offset:0;border-color:#8a77df;background:#fafcff}
+.mode-card:hover{border-color:#d7d4df;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+
+/* Mode card header with sequence badge */
+.mode-card-header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mode-card-header strong{flex:1}
+.sequence-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#8a77df;color:#fff;border-radius:50%;font-size:11px;font-weight:700;flex-shrink:0;animation:pulse-badge .4s ease-out}
+@keyframes pulse-badge{0%{transform:scale(1.2);opacity:.8}to{transform:scale(1);opacity:1}}
+
+/* Disabled state for single mode when already selected */
+.mode-card[data-selectable="disabled"]{opacity:.5;pointer-events:none}
+.mode-select:disabled{cursor:not-allowed;opacity:.5}
+
+/* Mode-specific visual cues in multiple mode */
+.mode-grid[data-mode="multiple"] .mode-card.selected{box-shadow:inset 0 0 0 2px #8a77df}
+
+/* Mode-specific visual cues in adaptive mode */
+.mode-grid[data-mode="adaptive"] .mode-card.selected{box-shadow:0 0 0 3px rgba(138,119,223,.2)}
+
+@media(max-width:700px){
+  .mode-grid-header{padding:4px 0}
+  .mode-grid{grid-template-columns:1fr}
+  .mode-card{padding:16px}
+}

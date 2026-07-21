@@ -60,19 +60,20 @@ export function TaskSetup({
         maxLength={5000}
       />
 
-      <div className="strategy-card" style={{ border: '1px solid #d7dce5', borderRadius: 12, padding: 12, marginTop: 8, marginBottom: 8, background: '#f7f9fc' }}>
+      <div className="strategy-card strategy-dropdown-wrapper">
         <label htmlFor="workflow-strategy-mode">Learning mode</label>
-        <select id="workflow-strategy-mode" value={workflowStrategy?.strategyMode ?? 'single'} onChange={(event) => onStrategyModeChange?.(event.target.value)} aria-label="Learning mode">
+        <select id="workflow-strategy-mode" value={workflowStrategy?.strategyMode ?? 'single'} onChange={(event) => onStrategyModeChange?.(event.target.value)} aria-label="Learning mode" className="strategy-dropdown">
           {WORKFLOW_STRATEGY_MODES.map((option) => (
             <option key={option.id} value={option.id}>{option.label}</option>
           ))}
         </select>
-        <p className="flow-hint" role="note" style={{ marginTop: 8 }}>
+        <p className="flow-hint" role="note">
+          <br />
           {workflowStrategy?.strategyMode === 'multiple'
-            ? 'Pick several workflows to combine into one path.'
+            ? '✦ Select multiple workflows in sequence—the order you click becomes your learning path.'
             : workflowStrategy?.strategyMode === 'adaptive'
-              ? 'Pick a few starting workflows and let AI choose the next path during the session.'
-              : 'Choose one workflow to guide the session.'}
+              ? '✦ Select starting workflows and AI will choose the next steps based on your progress.'
+              : '✦ Choose one workflow to guide your session from start to finish.'}
         </p>
       </div>
 

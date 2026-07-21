@@ -1,4 +1,10 @@
 fileignoreconfig:
+- filename: src/components/workflow-picker.jsx
+  checksum: d6a7cd463803a23406f8f8153be2fd9c07654a30ebfbd7bc224faabe9b30714e
+- filename: src/components/task-setup.jsx
+  checksum: 52d54e4e67f8ad8259ba06a1a138f2d3e55fc53818390881c810d58abf575a0b
 - filename: src/utils/export-text.js
-  checksum: e34ae897f587cef1d0df07b5c26f0c84139c5adbed793ea502c777031fe4317f
+  checksum: 07b7b8f305662a9f896f552b98e8100ef5ff70564a03c6d2b68640f8cfe63fad
+- filename: src/main.jsx
+  checksum: 42c8b45725c16e44401e02a07697a83d9680df3f9c8a716030a4d64b46c66b1f
 version: ""
