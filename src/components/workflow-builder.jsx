@@ -1,65 +1,27 @@
 import { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, Bot, Clock, MessageSquare, Plus, Trash2, UserRound } from 'lucide-react';
+import { getBuilderNodeTypes } from '../workflows/workflow-model';
 import { validateWorkflow } from '../workflows/validate-workflow';
 import { uid } from '../utils/uid';
 
 const MIN_CHARACTERS_FLOOR = 1;
 const MIN_CHARACTERS_CEILING = 10000;
-
-const NODE_TYPES = {
-  display: {
-    label: 'System says',
-    actor: 'system',
-    activity: 'display',
-    icon: MessageSquare,
-    defaults: {
-      title: 'Set context',
-      text: 'Take a moment to think before using AI.',
-    },
-  },
-  write: {
-    label: 'Learner responds',
-    actor: 'learner',
-    activity: 'write',
-    icon: UserRound,
-    defaults: {
-      title: 'Learner response',
-      text: 'Write your own attempt before AI responds.',
-      minCharacters: 120,
-    },
-  },
-  feedback: {
-    label: 'Ask AI',
-    actor: 'ai',
-    activity: 'feedback',
-    icon: Bot,
-    defaults: {
-      title: 'AI feedback',
-      text: 'Give feedback on the learner response without solving it directly.',
-    },
-  },
-  timer: {
-    label: 'Timer',
-    actor: 'system',
-    activity: 'timer',
-    icon: Clock,
-    defaults: {
-      title: 'Wait',
-      text: 'Keep working. AI is intentionally paused.',
-      durationSeconds: 180,
-    },
-  },
-  generate: {
-    label: 'AI final answer',
-    actor: 'ai',
-    activity: 'generate',
-    icon: Bot,
-    defaults: {
-      title: 'Worked explanation',
-      text: 'Generate a final worked explanation after the learner has tried.',
-    },
-  },
+const ICON_MAP = {
+  MessageSquare,
+  UserRound,
+  Bot,
+  Clock,
 };
+
+const NODE_TYPES = Object.fromEntries(
+  Object.entries(getBuilderNodeTypes()).map(([type, definition]) => [
+    type,
+    {
+      ...definition,
+      icon: ICON_MAP[definition.icon] ?? MessageSquare,
+    },
+  ]),
+);
 
 const INITIAL_NODES = [
   makeNode('display'),

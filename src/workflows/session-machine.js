@@ -1,5 +1,17 @@
 import { uid } from '../utils/uid';
-import { durationSecondsFor, minCharactersFor, normalizeWorkflow } from './workflow-model';
+import { durationSecondsFor, getWorkflowConfiguration, minCharactersFor, normalizeWorkflow } from './workflow-model';
+
+function reaskCountFor(session, stepId) {
+  return Number(session?.reaskCounts?.[stepId] ?? 0);
+}
+
+function shouldReask(session, step) {
+  if (!step || step.activity !== 'feedback') return false;
+  const workflowConfig = getWorkflowConfiguration(session?.workflowSnapshot);
+  if (!workflowConfig.reaskEnabled) return false;
+  const priorAttempts = reaskCountFor(session, step.id);
+  return priorAttempts > 0 && priorAttempts < workflowConfig.reaskLimit;
+}
 
 export function createSession({ task, workflow, connection }) {
   const now = new Date().toISOString();
@@ -16,6 +28,7 @@ export function createSession({ task, workflow, connection }) {
     currentStepIndex: 0,
     contributions: [],
     feedbacks: [],
+    reaskCounts: {},
     inputs: { problem: task },
     variables: { ...(workflowSnapshot.variables ?? {}) },
     events: [{ id: uid(), type: 'session_created', at: now }],
@@ -71,6 +84,20 @@ export function advance(session) {
   const nextIndex = session.currentStepIndex + 1;
   const nextStep = session.workflowSnapshot.steps[nextIndex];
   let next = { ...session, currentStepIndex: nextIndex };
+
+  if (shouldReask(session, step)) {
+    const attempt = reaskCountFor(session, step.id) + 1;
+    next = {
+      ...session,
+      currentStepIndex: session.currentStepIndex,
+      reaskCounts: {
+        ...(session.reaskCounts ?? {}),
+        [step.id]: attempt,
+      },
+      status: 'active',
+    };
+    return withEvent(next, 'reask_prompt', { stepId: step.id, attempt });
+  }
 
   if (step?.activity === 'feedback') next.status = 'active';
   if (nextStep?.activity === 'timer') {

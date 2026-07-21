@@ -6,7 +6,7 @@
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogle } from '@ai-sdk/google';
-import { AI_SKILLS } from '../workflows/workflow-model';
+import { getAIInstruction, getWorkflowConfiguration } from '../workflows/workflow-model';
 
 export const PROVIDERS = [
   { id: 'openai', label: 'OpenAI', models: ['gpt-5.4-mini', 'gpt-5.4'] },
@@ -36,30 +36,36 @@ function promptFor({ task, step, inputs = {}, contributions = [] }) {
   ].filter(Boolean).join('\n\n');
 }
 
-export async function requestFeedback({ connection, key, task, workflow, step, inputs, contributions }) {
+export async function requestFeedback({ connection, key, task, workflow, step, inputs, contributions, reaskCount = 0 }) {
   if (!key) {
     throw new Error('Model key is unavailable.');
   }
 
   const skill = step?.skill ?? (workflow.id === 'socratic' ? 'socratic_question' : 'draft_feedback');
-  const instruction = AI_SKILLS[skill] ?? AI_SKILLS.draft_feedback;
+  const workflowConfig = getWorkflowConfiguration(workflow);
+  const instruction = getAIInstruction(skill, { reaskCount });
   const providerId = providerIdFor(connection);
   try {
     let result;
+    const prompt = promptFor({ task, step, inputs, contributions });
+    const systemInstruction = workflowConfig.reaskEnabled && reaskCount > 0
+      ? `${instruction} If the learner still needs another pass, ask a short follow-up question without revealing the answer.`
+      : instruction;
+
     if (providerId === 'openai') {
       const openai = createOpenAI({ apiKey: key });
       result = await generateText({
-        model: openai(`${connection.model}`), 
-        system: instruction,
-        prompt: promptFor({ task, step, inputs, contributions }),
+        model: openai(`${connection.model}`),
+        system: systemInstruction,
+        prompt,
         maxOutputTokens: 300,
       });
     } else if (providerId === 'google') {
       const google = createGoogle({ apiKey: key });
       result = await generateText({
         model: google(`${connection.model}`),
-        system: instruction,
-        prompt: promptFor({ task, step, inputs, contributions }),
+        system: systemInstruction,
+        prompt,
         maxOutputTokens: 300,
       });
     } else {

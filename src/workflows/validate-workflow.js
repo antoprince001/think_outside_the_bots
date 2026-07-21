@@ -1,4 +1,4 @@
-import { ACTIVITIES, ACTORS, AI_SKILLS, minCharactersFor, normalizeStep, normalizeWorkflow } from './workflow-model';
+import { ACTIVITIES, ACTORS, AI_SKILLS, getWorkflowConfiguration, minCharactersFor, normalizeStep, normalizeWorkflow } from './workflow-model';
 
 export function validateWorkflow(workflow) {
   const errors = [];
@@ -13,6 +13,7 @@ export function validateWorkflow(workflow) {
   }
 
   const normalized = normalizeWorkflow(workflow);
+  const workflowConfiguration = getWorkflowConfiguration(normalized);
   let sawLearnerWrite = false;
   let generateCount = 0;
 
@@ -59,6 +60,9 @@ export function validateWorkflow(workflow) {
 
   if (!sawLearnerWrite) errors.push('A custom workflow needs at least one learner contribution.');
   if (generateCount > 1) errors.push('Only one generate step is allowed.');
+  if (!Number.isInteger(workflowConfiguration.reaskLimit) || workflowConfiguration.reaskLimit < 1 || workflowConfiguration.reaskLimit > 3) {
+    errors.push('Re-ask limit must be between 1 and 3.');
+  }
 
   return errors;
 }

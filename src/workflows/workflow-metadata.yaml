@@ -1,0 +1,117 @@
+global:
+  defaultReaskLimit: 3
+  allowReask: true
+
+activities:
+  - id: write
+    label: Learner response
+    actor: learner
+    description: Learner contributes their own attempt.
+  - id: feedback
+    label: Ask AI
+    actor: ai
+    description: AI responds with guidance.
+  - id: generate
+    label: Final answer
+    actor: ai
+    description: AI provides a worked explanation.
+  - id: hint
+    label: Hint
+    actor: ai
+    description: AI offers a small nudge.
+  - id: timer
+    label: Timer
+    actor: system
+    description: Pause the session for a set period.
+  - id: decision
+    label: Decision
+    actor: system
+    description: Branch to a different path.
+  - id: display
+    label: System says
+    actor: system
+    description: Show context or instructions.
+  - id: quiz
+    label: Quiz
+    actor: learner
+    description: Check understanding with a quick quiz.
+  - id: upload
+    label: Upload
+    actor: learner
+    description: Attach evidence or notes.
+  - id: review
+    label: Review
+    actor: learner
+    description: Review previous work.
+  - id: end
+    label: End
+    actor: system
+    description: Close the workflow.
+
+actors:
+  - id: learner
+    label: Learner
+  - id: ai
+    label: AI
+  - id: system
+    label: System
+  - id: teacher
+    label: Teacher
+
+skills:
+  gap_feedback:
+    prompt: Give concise gap feedback on the student explanation. Do not provide the final solution.
+    reaskPrompt: Ask one concise follow-up question that helps the learner refine the explanation without giving the answer.
+  draft_feedback:
+    prompt: Give concise feedback on the student draft. Do not provide a direct solution.
+    reaskPrompt: Ask one concise follow-up question that helps the learner improve the draft without giving the answer.
+  socratic_question:
+    prompt: Ask one concise Socratic follow-up question. Do not provide a direct solution.
+    reaskPrompt: Ask a short follow-up question that nudges the learner toward their own insight without revealing the answer.
+  final_answer:
+    prompt: Provide a clear worked explanation. Invite the learner to compare it with their own reasoning.
+    reaskPrompt: Offer a brief re-ask that focuses the learner on the strongest missing concept before giving the answer.
+
+builderNodeTypes:
+  display:
+    label: System says
+    actor: system
+    activity: display
+    icon: MessageSquare
+    defaults:
+      title: Set context
+      text: Take a moment to think before using AI.
+  write:
+    label: Learner responds
+    actor: learner
+    activity: write
+    icon: UserRound
+    defaults:
+      title: Learner response
+      text: Write your own attempt before AI responds.
+      minCharacters: 120
+  feedback:
+    label: Ask AI
+    actor: ai
+    activity: feedback
+    icon: Bot
+    defaults:
+      title: AI feedback
+      text: Give feedback on the learner response without solving it directly.
+  timer:
+    label: Timer
+    actor: system
+    activity: timer
+    icon: Clock
+    defaults:
+      title: Wait
+      text: Keep working. AI is intentionally paused.
+      durationSeconds: 180
+  generate:
+    label: AI final answer
+    actor: ai
+    activity: generate
+    icon: Bot
+    defaults:
+      title: Worked explanation
+      text: Generate a final worked explanation after the learner has tried.

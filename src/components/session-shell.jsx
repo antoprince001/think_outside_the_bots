@@ -47,6 +47,7 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
         step,
         inputs: resolveStepInputs(step, session),
         contributions: session.contributions,
+        reaskCount: session.reaskCounts?.[step?.id] ?? 0,
       });
       const feedbackRecord = {
         id: uid(),

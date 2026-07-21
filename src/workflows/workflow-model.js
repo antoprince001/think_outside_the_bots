@@ -1,3 +1,7 @@
+import { parse } from 'yaml';
+import metadataYaml from './workflow-metadata.yaml?raw';
+import presetsYaml from './presets.yaml?raw';
+
 const LEGACY_STEP_MAP = {
   contribution: { actor: 'learner', activity: 'write', output: 'draft' },
   freeze: { actor: 'system', activity: 'timer' },
@@ -5,19 +9,111 @@ const LEGACY_STEP_MAP = {
   final_answer: { actor: 'ai', activity: 'generate', output: 'finalAnswer' },
 };
 
-export const AI_SKILLS = {
-  gap_feedback:
-    'Give concise gap feedback on the student explanation. Do not provide the final solution.',
-  draft_feedback:
-    'Give concise feedback on the student draft. Do not provide a direct solution.',
-  socratic_question:
-    'Ask one concise Socratic follow-up question. Do not provide a direct solution.',
-  final_answer:
-    'Provide a clear worked explanation. Invite the learner to compare it with their own reasoning.',
+const parsedMetadata = parse(metadataYaml) ?? {};
+const parsedPresets = parse(presetsYaml) ?? {};
+
+const DEFAULT_ACTIVITY_DEFINITIONS = [
+  { id: 'write', label: 'Learner response', actor: 'learner', description: 'Learner contributes their own attempt.' },
+  { id: 'feedback', label: 'Ask AI', actor: 'ai', description: 'AI responds with guidance.' },
+  { id: 'generate', label: 'Final answer', actor: 'ai', description: 'AI provides a worked explanation.' },
+  { id: 'hint', label: 'Hint', actor: 'ai', description: 'AI offers a small nudge.' },
+  { id: 'timer', label: 'Timer', actor: 'system', description: 'Pause the session for a set period.' },
+  { id: 'decision', label: 'Decision', actor: 'system', description: 'Branch to a different path.' },
+  { id: 'display', label: 'System says', actor: 'system', description: 'Show context or instructions.' },
+  { id: 'quiz', label: 'Quiz', actor: 'learner', description: 'Check understanding with a quick quiz.' },
+  { id: 'upload', label: 'Upload', actor: 'learner', description: 'Attach evidence or notes.' },
+  { id: 'review', label: 'Review', actor: 'learner', description: 'Review previous work.' },
+  { id: 'end', label: 'End', actor: 'system', description: 'Close the workflow.' },
+];
+
+const DEFAULT_ACTOR_DEFINITIONS = [
+  { id: 'learner', label: 'Learner' },
+  { id: 'ai', label: 'AI' },
+  { id: 'system', label: 'System' },
+  { id: 'teacher', label: 'Teacher' },
+];
+
+const DEFAULT_SKILL_DEFINITIONS = {
+  gap_feedback: {
+    prompt: 'Give concise gap feedback on the student explanation. Do not provide the final solution.',
+    reaskPrompt: 'Ask one concise follow-up question that helps the learner refine the explanation without giving the answer.',
+  },
+  draft_feedback: {
+    prompt: 'Give concise feedback on the student draft. Do not provide a direct solution.',
+    reaskPrompt: 'Ask one concise follow-up question that helps the learner improve the draft without giving the answer.',
+  },
+  socratic_question: {
+    prompt: 'Ask one concise Socratic follow-up question. Do not provide a direct solution.',
+    reaskPrompt: 'Ask a short follow-up question that nudges the learner toward their own insight without revealing the answer.',
+  },
+  final_answer: {
+    prompt: 'Provide a clear worked explanation. Invite the learner to compare it with their own reasoning.',
+    reaskPrompt: 'Offer a brief re-ask that focuses the learner on the strongest missing concept before giving the answer.',
+  },
 };
 
-export const ACTIVITIES = ['write', 'feedback', 'generate', 'hint', 'timer', 'decision', 'display', 'quiz', 'upload', 'review', 'end'];
-export const ACTORS = ['learner', 'ai', 'system', 'teacher'];
+function normalizeSkillDefinitions(source) {
+  return Object.fromEntries(
+    Object.entries(source ?? {}).map(([id, definition]) => {
+      if (typeof definition === 'string') {
+        return [id, { prompt: definition, reaskPrompt: definition }];
+      }
+      return [id, { prompt: definition?.prompt ?? '', reaskPrompt: definition?.reaskPrompt ?? definition?.prompt ?? '' }];
+    }),
+  );
+}
+
+const metadataActivities = Array.isArray(parsedMetadata.activities) ? parsedMetadata.activities : DEFAULT_ACTIVITY_DEFINITIONS;
+const metadataActors = Array.isArray(parsedMetadata.actors) ? parsedMetadata.actors : DEFAULT_ACTOR_DEFINITIONS;
+const metadataSkills = normalizeSkillDefinitions(parsedMetadata.skills);
+
+export const ACTIVITY_DEFINITIONS = metadataActivities.map((activity) => ({ ...activity }));
+export const ACTOR_DEFINITIONS = metadataActors.map((actor) => ({ ...actor }));
+export const AI_SKILL_DEFINITIONS = {
+  ...DEFAULT_SKILL_DEFINITIONS,
+  ...metadataSkills,
+};
+
+export const ACTIVITIES = ACTIVITY_DEFINITIONS.map((activity) => activity.id);
+export const ACTORS = ACTOR_DEFINITIONS.map((actor) => actor.id);
+export const AI_SKILLS = Object.fromEntries(
+  Object.entries(AI_SKILL_DEFINITIONS).map(([id, definition]) => [id, definition.prompt]),
+);
+export const DEFAULT_REASK_LIMIT = Number(parsedMetadata?.global?.defaultReaskLimit ?? parsedPresets?.defaults?.reaskLimit ?? 3) || 3;
+export const REASK_ENABLED_BY_DEFAULT = parsedMetadata?.global?.allowReask ?? parsedPresets?.defaults?.reaskEnabled ?? true;
+export const BUILDER_NODE_TYPES = parsedMetadata.builderNodeTypes && typeof parsedMetadata.builderNodeTypes === 'object'
+  ? parsedMetadata.builderNodeTypes
+  : {};
+
+export function getActivityDefinitions() {
+  return ACTIVITY_DEFINITIONS;
+}
+
+export function getBuilderNodeTypes() {
+  return BUILDER_NODE_TYPES;
+}
+
+export function getWorkflowConfiguration(workflow = {}) {
+  const config = workflow?.configuration ?? {};
+  const reaskEnabled = config?.reaskEnabled ?? workflow?.reaskEnabled ?? REASK_ENABLED_BY_DEFAULT;
+  const reaskLimit = Number(config?.reaskLimit ?? workflow?.reaskLimit ?? DEFAULT_REASK_LIMIT);
+
+  return {
+    reaskEnabled: reaskEnabled === true || reaskEnabled === 'true',
+    reaskLimit: Number.isFinite(reaskLimit) && reaskLimit > 0 ? Math.min(Math.round(reaskLimit), 3) : DEFAULT_REASK_LIMIT,
+  };
+}
+
+export function getSkillDefinition(skillId) {
+  return AI_SKILL_DEFINITIONS[skillId] ?? AI_SKILL_DEFINITIONS.draft_feedback ?? { prompt: '', reaskPrompt: '' };
+}
+
+export function getAIInstruction(skillId, { reaskCount = 0 } = {}) {
+  const definition = getSkillDefinition(skillId);
+  const baseInstruction = definition?.prompt ?? '';
+  const reaskInstruction = reaskCount > 0 ? definition?.reaskPrompt ?? '' : '';
+  return [baseInstruction, reaskInstruction].filter(Boolean).join(' ');
+}
 
 export function normalizeStep(step = {}) {
   const legacy = LEGACY_STEP_MAP[step.type] ?? {};
@@ -51,6 +147,9 @@ export function normalizeWorkflow(workflow) {
     variables: {},
     outputs: {},
     ...workflow,
+    configuration: {
+      ...(workflow?.configuration ?? {}),
+    },
     steps: (workflow.steps ?? []).map(normalizeStep),
   };
 }
