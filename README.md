@@ -1,6 +1,6 @@
 # Think Outside The Bots
 
-Minimal React + Vite application for interactive learning workflows.
+Think with AI, not through it. An AI learning platform that challenges your thinking before giving answers.
 
 ## Run locally
 
