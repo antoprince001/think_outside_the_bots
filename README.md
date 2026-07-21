@@ -64,7 +64,21 @@ Then open http://localhost:8080/.
 
 ## Usage of Codex and GPT 5.6
 
-Built the prototype over a single weekend using Spec-Driven Development with GitHub Speckit, Codex, and GPT-5.6.
-Rather than treating AI as a code generator, I used it as a collaborative thought partner throughout the design process. GPT-5.6 helped refine the problem statement, challenge assumptions, iterate on product concepts, and translate specifications into working features. Spec-driven development made it much easier to evolve the application without losing clarity as the product expanded.
+This prototype was built over a single weekend using a Spec-Driven Development approach powered by GitHub Spec Kit, Codex, and GPT-5.6. Instead of jumping straight into implementation, every feature began as a written specification describing the problem, user experience, workflow, and expected behavior. This allowed the product to evolve rapidly while keeping the architecture and user experience consistent.
 
+One of the biggest differences in this project was how AI was used. Rather than treating AI as a code generator, I treated GPT-5.6 as a collaborative design partner throughout the entire development process.
+
+Our workflow looked something like this:
+
+Start with the learning problem. Every feature began by asking questions such as "What cognitive behavior are we trying to encourage?" rather than "What should we build?"
+Iterate on product ideas together. GPT-5.6 challenged assumptions, suggested alternative learning workflows, compared educational techniques such as the Feynman Technique, Socratic questioning, AI freeze windows, long-form drafting, and spaced repetition, and helped identify which ideas best aligned with the goal of introducing intentional cognitive friction.
+Refine specifications. Once an idea was selected, it was translated into detailed specifications describing user flows, UI behavior, AI prompts, state transitions, timers, workflow nodes, and edge cases before writing implementation code.
+Generate implementation. Using GitHub Codex together with the specifications, individual components and features were implemented incrementally. Because the specifications acted as the single source of truth, adding new workflows or modifying existing ones remained straightforward.
+Continuously review and improve. After each feature was built, GPT-5.6 was used again to critique the UX, simplify interactions, identify inconsistencies, and propose refinements before moving on to the next iteration.
+
+This iterative cycle of Think → Specify → Build → Review → Refine made development significantly faster while producing a more coherent product than relying on ad-hoc prompting alone.
+
+Spec-driven development also made experimentation much easier. During the weekend, the project evolved from a simple "delay the AI answer" concept into a configurable workflow engine capable of supporting multiple learning strategies—including the Feynman Technique, Socratic questioning, AI freeze windows, adaptive AI feedback, and completely custom educational workflows—without requiring major architectural changes.
+
+Overall, this project demonstrates that modern AI development isn't just about generating code faster. When combined with clear specifications and iterative collaboration, AI becomes a partner for product thinking, system design, educational research, UX refinement, and implementation, enabling rapid prototyping while maintaining clarity and direction throughout the development process.
 
