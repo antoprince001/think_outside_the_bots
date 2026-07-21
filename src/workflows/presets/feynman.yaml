@@ -1,0 +1,40 @@
+version: "1.0.0"
+id: feynman
+name: Feynman Technique
+kind: prebuilt
+description: Explain it in your own words first. AI points out the gaps.
+inputs:
+  - problem
+variables:
+  explanation: null
+  feedback: null
+  finalAnswer: null
+steps:
+  - id: explain
+    actor: learner
+    activity: write
+    instruction: Explain the task in your own words, as if teaching someone new to it.
+    validation:
+      minCharacters: 120
+    output: explanation
+  - id: feedback
+    actor: ai
+    activity: feedback
+    skill: gap_feedback
+    configuration:
+      prompt: Review the learner explanation and explain what is still unclear or missing.
+    inputs:
+      problem: "{{inputs.problem}}"
+      explanation: "{{vars.explanation}}"
+    output: feedback
+  - id: answer
+    actor: ai
+    activity: generate
+    skill: final_answer
+    enabled: true
+    inputs:
+      problem: "{{inputs.problem}}"
+      explanation: "{{vars.explanation}}"
+    output: finalAnswer
+outputs:
+  answer: "{{vars.finalAnswer}}"

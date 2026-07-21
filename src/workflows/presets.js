@@ -1,16 +1,23 @@
 import { parse } from 'yaml';
-import presetsYaml from './presets.yaml?raw';
+import presetMeta from './presets.yaml?raw';
+import feynmanYaml from './presets/feynman.yaml?raw';
+import socraticYaml from './presets/socratic.yaml?raw';
+import freezeYaml from './presets/freeze.yaml?raw';
+import longDraftYaml from './presets/long-draft.yaml?raw';
 
-const parsed = parse(presetsYaml) ?? {};
-const defaults = parsed.defaults ?? {};
+const presetMetaData = parse(presetMeta) ?? {};
+const defaults = presetMetaData.defaults ?? {};
 
-export const presets = Array.isArray(parsed.presets)
-  ? parsed.presets.map((preset) => ({
-      ...preset,
-      configuration: {
-        reaskEnabled: defaults.reaskEnabled ?? true,
-        reaskLimit: defaults.reaskLimit ?? 3,
-        ...(preset.configuration ?? {}),
-      },
-    }))
-  : [];
+const presetSources = [feynmanYaml, socraticYaml, freezeYaml, longDraftYaml];
+
+export const presets = presetSources.map((source) => {
+  const preset = parse(source) ?? {};
+  return {
+    ...preset,
+    configuration: {
+      reaskEnabled: defaults.reaskEnabled ?? true,
+      reaskLimit: defaults.reaskLimit ?? 3,
+      ...(preset.configuration ?? {}),
+    },
+  };
+});

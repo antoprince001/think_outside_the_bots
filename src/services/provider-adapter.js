@@ -52,13 +52,15 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
       ? `${instruction} If the learner still needs another pass, ask a short follow-up question without revealing the answer.`
       : instruction;
 
+    const maxOutputTokens = step?.activity === 'generate' ? 1000 : 300;
+
     if (providerId === 'openai') {
       const openai = createOpenAI({ apiKey: key });
       result = await generateText({
         model: openai(`${connection.model}`),
         system: systemInstruction,
         prompt,
-        maxOutputTokens: 300,
+        maxOutputTokens,
       });
     } else if (providerId === 'google') {
       const google = createGoogle({ apiKey: key });
@@ -66,7 +68,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
         model: google(`${connection.model}`),
         system: systemInstruction,
         prompt,
-        maxOutputTokens: 300,
+        maxOutputTokens,
       });
     } else {
       throw new Error('Unsupported provider.');

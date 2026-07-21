@@ -1,0 +1,43 @@
+version: "1.0.0"
+id: freeze
+name: AI Freeze Window
+kind: prebuilt
+description: AI stays paused for a set time while you draft.
+inputs:
+  - problem
+variables:
+  draft: null
+  feedback: null
+  finalAnswer: null
+steps:
+  - id: draft
+    actor: learner
+    activity: write
+    instruction: Start drafting your own attempt.
+    validation:
+      minCharacters: 1
+    output: draft
+  - id: freeze
+    actor: system
+    activity: timer
+    durationSeconds: 180
+    message: Keep drafting. AI is intentionally paused.
+  - id: feedback
+    actor: ai
+    activity: feedback
+    skill: draft_feedback
+    inputs:
+      problem: "{{inputs.problem}}"
+      draft: "{{vars.draft}}"
+    output: feedback
+  - id: answer
+    actor: ai
+    activity: generate
+    skill: final_answer
+    enabled: true
+    inputs:
+      problem: "{{inputs.problem}}"
+      draft: "{{vars.draft}}"
+    output: finalAnswer
+outputs:
+  answer: "{{vars.finalAnswer}}"

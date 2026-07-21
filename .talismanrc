@@ -1,5 +1,4 @@
-
 fileignoreconfig:
-- filename: src/components/workflow-builder.jsx
-  checksum: c87d244eef9957790fbbb104e9767c44063ee662ce940857ba01d87b8e7a6932
+- filename: pnpm-lock.yaml
+  checksum: 2652639a972c0a1a3b09e4f36ae1a58887486788fedba2372ed86b18afbd8dae
 version: ""

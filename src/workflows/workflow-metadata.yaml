@@ -60,17 +60,17 @@ actors:
 
 skills:
   gap_feedback:
-    prompt: Give concise gap feedback on the student explanation. Do not provide the final solution.
+    prompt: Give concise gap feedback on the student explanation. Do not provide the final solution. If the student has already tried once, ask one short follow-up question that helps them refine the explanation without giving the answer.
     reaskPrompt: Ask one concise follow-up question that helps the learner refine the explanation without giving the answer.
   draft_feedback:
-    prompt: Give concise feedback on the student draft. Do not provide a direct solution.
+    prompt: Give concise feedback on the student draft. Do not provide a direct solution. If the learner has already tried once, ask one short follow-up question that helps them improve the draft without giving the answer.
     reaskPrompt: Ask one concise follow-up question that helps the learner improve the draft without giving the answer.
   socratic_question:
-    prompt: Ask one concise Socratic follow-up question. Do not provide a direct solution.
+    prompt: Ask one concise Socratic follow-up question. Do not provide a direct solution. If the learner has already tried once, ask a short follow-up question that nudges them toward their own insight without revealing the answer.
     reaskPrompt: Ask a short follow-up question that nudges the learner toward their own insight without revealing the answer.
   final_answer:
-    prompt: Provide a clear worked explanation. Invite the learner to compare it with their own reasoning.
-    reaskPrompt: Offer a brief re-ask that focuses the learner on the strongest missing concept before giving the answer.
+    prompt: Provide a clear worked explanation. Invite the learner to compare it with their own reasoning. If the learner has already tried once, give the answer directly and keep it focused on the strongest missing concept.
+    reaskPrompt: Offer a concise answer that focuses on the strongest missing concept and helps the learner close the gap.
 
 builderNodeTypes:
   display:

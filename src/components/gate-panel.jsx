@@ -8,10 +8,15 @@ function formatCountdown(secondsLeft) {
   return `${minutes}:${seconds} remaining`;
 }
 
-function actionLabel({ step, isLocked, secondsLeft, isAiLoading }) {
+function actionLabel({ step, isLocked, secondsLeft, isAiLoading, isReask = false }) {
   if (isAiLoading) return 'Getting feedback...';
   if (isLocked) return formatCountdown(secondsLeft);
-  if (step?.activity === 'feedback') return 'Get feedback';
+  if (step?.activity === 'feedback') {
+    if (isReask) {
+      return step?.skill === 'socratic_question' ? 'Ask another question' : 'Explain again';
+    }
+    return 'Get feedback';
+  }
   if (step?.activity === 'generate') return 'Unlock worked explanation';
   if (step?.activity === 'display') return 'Continue';
   return 'Submit my thinking';
@@ -35,6 +40,8 @@ export function GatePanel({ session, step, draft, onDraftChange, feedback, now, 
   const isLocked = isTimerStep && secondsLeft > 0;
   const showsDraftArea = step?.activity === 'write' || isTimerStep;
   const displayMessage = step?.configuration?.message;
+  const reaskCount = Number(session?.reaskCounts?.[step?.id] ?? 0);
+  const reaskHint = reaskCount > 0 ? 'Try again with a fresh angle.' : null;
   const charactersRemaining = minimumCharacters
     ? Math.max(0, minimumCharacters - draft.trim().length)
     : null;
@@ -74,9 +81,13 @@ export function GatePanel({ session, step, draft, onDraftChange, feedback, now, 
 
       {feedback && (
         <article className="feedback">
-          <b>AI feedback</b>
+          <b>{reaskHint ? 'Try again' : 'AI feedback'}</b>
           <p>{feedback}</p>
         </article>
+      )}
+
+      {step?.activity === 'feedback' && reaskHint && (
+        <p className="hint">{reaskHint}</p>
       )}
 
       {session.status === 'recoverable_error' && (
@@ -98,7 +109,7 @@ export function GatePanel({ session, step, draft, onDraftChange, feedback, now, 
         aria-busy={isAiLoading}
       >
         {isAiLoading && <span className="spinner button-spinner" aria-hidden="true" />}
-        {actionLabel({ step, isLocked, secondsLeft, isAiLoading })}
+        {actionLabel({ step, isLocked, secondsLeft, isAiLoading, isReask: reaskCount > 0 })}
       </button>
     </>
   );

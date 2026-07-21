@@ -1,0 +1,30 @@
+version: "1.0.0"
+id: socratic
+name: Socratic Questioning
+kind: prebuilt
+description: Respond to focused questions instead of getting a direct answer.
+inputs:
+  - problem
+variables:
+  response: null
+  question: null
+steps:
+  - id: respond
+    actor: learner
+    activity: write
+    instruction: Share your current thinking or attempt.
+    validation:
+      minCharacters: 40
+    output: response
+  - id: question
+    actor: ai
+    activity: feedback
+    skill: socratic_question
+    configuration:
+      prompt: Ask one focused question that nudges the learner to refine their own thinking without giving away the answer.
+    inputs:
+      problem: "{{inputs.problem}}"
+      response: "{{vars.response}}"
+    output: question
+outputs:
+  latestQuestion: "{{vars.question}}"
