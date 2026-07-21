@@ -1,3 +1,5 @@
+import { withTimerDuration } from './workflow-model';
+
 function isFinalAnswerStep(step) {
   return step?.activity === 'generate' || step?.skill === 'final_answer' || step?.type === 'final_answer';
 }
@@ -54,8 +56,11 @@ export function buildCombinedWorkflow(workflows, strategyState) {
       .replace(/^-+|-+$/g, '') || `workflow-${workflowIndex + 1}`;
     const outputNames = new Map();
     const shouldKeepFinalAnswer = workflowIndex === selectedWorkflows.length - 1;
+    const effectiveWorkflow = workflow?.id === 'freeze' && Number.isFinite(Number(strategyState?.freezeDurationSeconds))
+      ? withTimerDuration(workflow, Number(strategyState.freezeDurationSeconds))
+      : workflow;
 
-    (workflow.steps ?? []).forEach((step) => {
+    (effectiveWorkflow.steps ?? []).forEach((step) => {
       if (!shouldKeepFinalAnswer && isFinalAnswerStep(step)) {
         return;
       }

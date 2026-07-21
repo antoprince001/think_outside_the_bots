@@ -57,4 +57,27 @@ describe('buildCombinedWorkflow', () => {
     expect(combined.steps[0].output).toBe('socratic-draft2');
     expect(combined.steps[1].output).toBe('feynman-draft');
   });
+
+  it('uses the selected freeze duration when a freeze workflow is combined into multiple paths', () => {
+    const workflows = [
+      {
+        id: 'freeze',
+        name: 'Freeze',
+        steps: [{ id: 'freeze-step', actor: 'system', activity: 'timer', configuration: { durationSeconds: 180 } }],
+      },
+      {
+        id: 'socratic',
+        name: 'Socratic',
+        steps: [{ id: 'a', actor: 'learner', activity: 'write', output: 'draft' }],
+      },
+    ];
+
+    const combined = buildCombinedWorkflow(workflows, {
+      selectedWorkflowIds: ['freeze', 'socratic'],
+      strategyMode: 'multiple',
+      freezeDurationSeconds: 600,
+    });
+
+    expect(combined.steps[0].configuration.durationSeconds).toBe(600);
+  });
 });

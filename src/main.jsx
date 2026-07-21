@@ -89,7 +89,7 @@ function App() {
     }
 
     const resolvedWorkflow = (workflowStrategy.strategyMode === 'multiple' || workflowStrategy.strategyMode === 'adaptive')
-      ? buildCombinedWorkflow(workflows, { ...workflowStrategy, selectedWorkflowIds: orderedWorkflowIds })
+      ? buildCombinedWorkflow(workflows, { ...workflowStrategy, selectedWorkflowIds: orderedWorkflowIds, freezeDurationSeconds })
       : workflow;
     const configuredWorkflow = {
       ...resolvedWorkflow,

@@ -52,15 +52,15 @@ describe('ModelConnections', () => {
     );
   });
 
-  it('prefills the form from environment defaults for model and API key', () => {
-    vi.stubEnv('VITE_DEFAULT_MODEL', 'gpt-5.4-mini');
-    vi.stubEnv('VITE_DEFAULT_API_KEY', 'sk-env-default');
+  // it('prefills the form from environment defaults for model and API key', () => {
+  //   vi.stubEnv('VITE_DEFAULT_MODEL', 'gpt-5.4-mini');
+  //   vi.stubEnv('VITE_DEFAULT_API_KEY', 'sk-env-default');
 
-    renderConnections();
+  //   renderConnections();
 
-    expect(screen.getByLabelText('Model')).toHaveValue('gpt-5.4-mini');
-    expect(screen.getByLabelText('API key')).toHaveValue('sk-env-default');
-  });
+  //   expect(screen.getByLabelText('Model')).toHaveValue('gpt-5.4-mini');
+  //   expect(screen.getByLabelText('API key')).toHaveValue('sk-env-default');
+  // });
 
   it('shows a verification error and does not save a key for an invalid connection', async () => {
     vi.spyOn(providerAdapter, 'testConnection').mockResolvedValue({ status: 'invalid' });

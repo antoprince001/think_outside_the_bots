@@ -1,12 +1,8 @@
 fileignoreconfig:
 - filename: .env.example
-  checksum: a5818dd2cbf530820099ddf0b9c2f989fcb9551286861c11223e73e350f45f33
-- filename: README.md
-  checksum: 64084a791453a802fc3d4bde3f76df95c16a5aa218cc3e489914dc843021bb57
-- filename: Dockerfile
-  checksum: dd13d4cf274e8ed18ab06ac4aa570fa5f999361daec507a01077d2e6edc6abcb
-- filename: src/services/auth-store.js
-  checksum: 54d09af5cf7c6e3221048c9513a49a2c8cf4d062622bc09d54aad67883c9dfc4
-- filename: src/components/login-screen.jsx
-  checksum: a86fc6b4f066498288e5ae4eb8ee42c663b531c7b61367f0d1aea2740a76f5bf
+  checksum: 912c5a693c640ac0bcf91b318e4c2cac093e3a718db1731ec48c41a638637964
+- filename: src/components/model-connections.jsx
+  checksum: 344528d13c7349d969dbd733bc7eb7e84b45d3cf3fdd4fae1dfabe4aecf7a218
+- filename: src/services/provider-adapter.js
+  checksum: 6ee8d018c1260c3c977a95a57333286d8abe4f4ea62257fa610d1e4f76fce51a
 version: ""
