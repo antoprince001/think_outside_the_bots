@@ -13,3 +13,8 @@
 .small-input{width:120px;max-width:120px}
 .export-block{margin-top:18px}
 .export-card{background:#fff;border:1px solid #e5e1dc;border-radius:8px;padding:12px;max-height:300px;overflow:auto}
+
+/* Builder: prevent global .timer rules from changing the node card layout */
+.dag-node.timer{display:block}
+.dag-node.timer .node-heading{align-items:center}
+.dag-node.timer .field-row{align-items:center}
