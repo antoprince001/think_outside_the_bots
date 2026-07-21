@@ -2,6 +2,7 @@
 
 Think with AI, not through it. An AI learning platform that challenges your thinking before giving answers.
 
+Demo - https://www.youtube.com/watch?v=s-B-YiOa3wk
 ## Run locally
 
 Install dependencies and start the dev server:
