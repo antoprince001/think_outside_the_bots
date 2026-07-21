@@ -25,18 +25,24 @@ export async function testConnection(_connection, key) {
   return { status: 'valid' };
 }
 
-function promptFor({ task, step, inputs = {}, contributions = [] }) {
+function promptFor({ task, step, inputs = {}, contributions = [], feedbacks = [] }) {
   const inputLines = Object.entries(inputs).map(([key, value]) => `${key}: ${value}`).join('\n');
-  const latestContribution = contributions.at(-1)?.body ?? '';
+  const historyEntries = [
+    ...contributions.map((entry) => ({ role: 'Learner', text: entry?.body ?? '' })),
+    ...feedbacks.map((entry) => ({ role: entry?.kind === 'final_answer' ? 'AI final answer' : 'AI feedback', text: entry?.content ?? '' })),
+  ].filter((entry) => entry.text?.trim());
+  const conversationHistory = historyEntries.length > 0
+    ? `Conversation so far:\n${historyEntries.slice(-6).map((entry) => `${entry.role}: ${entry.text}`).join('\n')}`
+    : '';
   return [
     `Problem: ${task}`,
     step?.configuration?.prompt && `Activity request: ${step.configuration.prompt}`,
     inputLines && `Workflow inputs:\n${inputLines}`,
-    latestContribution && `Latest learner work: ${latestContribution}`,
+    conversationHistory && conversationHistory,
   ].filter(Boolean).join('\n\n');
 }
 
-export async function requestFeedback({ connection, key, task, workflow, step, inputs, contributions, reaskCount = 0 }) {
+export async function requestFeedback({ connection, key, task, workflow, step, inputs, contributions, feedbacks = [], reaskCount = 0 }) {
   if (!key) {
     throw new Error('Model key is unavailable.');
   }
@@ -47,12 +53,12 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
   const providerId = providerIdFor(connection);
   try {
     let result;
-    const prompt = promptFor({ task, step, inputs, contributions });
+    const prompt = promptFor({ task, step, inputs, contributions, feedbacks });
     const systemInstruction = workflowConfig.reaskEnabled && reaskCount > 0
       ? `${instruction} If the learner still needs another pass, ask a short follow-up question without revealing the answer.`
       : instruction;
 
-    const maxOutputTokens = step?.activity === 'generate' ? 1000 : 300;
+    const maxOutputTokens = step?.activity === 'generate' ? 2000 : 1500;
 
     if (providerId === 'openai') {
       const openai = createOpenAI({ apiKey: key });

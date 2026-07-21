@@ -58,7 +58,7 @@ describe('provider-adapter', () => {
     expect(createOpenAI).toHaveBeenCalledWith({ apiKey: 'sk-test' });
     expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
       model: { apiKey: 'sk-test', model: 'gpt-4.1-mini' },
-      maxOutputTokens: 300,
+      maxOutputTokens: 500,
     }));
   });
 
