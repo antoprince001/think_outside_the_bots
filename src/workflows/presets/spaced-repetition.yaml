@@ -1,0 +1,56 @@
+version: "1.0.0"
+id: spaced-repetition
+name: Spaced Repetition
+kind: prebuilt
+description: Recall concepts multiple times with AI reinforcement to strengthen memory.
+inputs:
+  - problem
+variables:
+  firstAttempt: null
+  reinforcement: null
+  recall: null
+  finalAnswer: null
+steps:
+  - id: initial
+    actor: learner
+    activity: write
+    instruction: Explain or answer the question first.
+    validation:
+      minCharacters: 30
+    output: firstAttempt
+  - id: reinforce
+    actor: ai
+    activity: feedback
+    skill: spaced_repetition_reinforce
+    inputs:
+      problem: "{{inputs.problem}}"
+      firstAttempt: "{{vars.firstAttempt}}"
+    output: reinforcement
+  - id: recall
+    actor: learner
+    activity: write
+    instruction: Now recall the key concept or answer again without looking back. What do you remember?
+    validation:
+      minCharacters: 20
+    output: recall
+  - id: verify
+    actor: ai
+    activity: feedback
+    skill: spaced_repetition_verify
+    inputs:
+      problem: "{{inputs.problem}}"
+      reinforcement: "{{vars.reinforcement}}"
+      recall: "{{vars.recall}}"
+    output: verification
+  - id: answer
+    actor: ai
+    activity: generate
+    skill: final_answer
+    enabled: true
+    inputs:
+      problem: "{{inputs.problem}}"
+      firstAttempt: "{{vars.firstAttempt}}"
+      recall: "{{vars.recall}}"
+    output: finalAnswer
+outputs:
+  answer: "{{vars.finalAnswer}}"

@@ -50,6 +50,14 @@ const DEFAULT_SKILL_DEFINITIONS = {
     prompt: 'Provide a clear worked explanation. Invite the learner to compare it with their own reasoning.',
     reaskPrompt: 'Offer a brief re-ask that focuses the learner on the strongest missing concept before giving the answer.',
   },
+  spaced_repetition_reinforce: {
+    prompt: 'Review the learner\'s first attempt and highlight the **key concepts** they need to remember. Use bold text to emphasize core ideas. Do not provide the full solution yet.',
+    reaskPrompt: 'Reinforce the key concepts again, focusing on what the learner should recall.',
+  },
+  spaced_repetition_verify: {
+    prompt: 'Compare the learner\'s second attempt with the concepts you reinforced. Affirm what they recalled correctly and gently correct any gaps.',
+    reaskPrompt: 'Verify their understanding and offer a final clarification.',
+  },
 };
 
 function normalizeSkillDefinitions(source) {

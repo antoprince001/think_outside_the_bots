@@ -1,4 +1,5 @@
 import { Timer } from 'lucide-react';
+import { marked } from 'marked';
 import { remaining } from '../workflows/session-machine';
 import { minCharactersFor } from '../workflows/workflow-model';
 
@@ -8,6 +9,10 @@ function formatCountdown(secondsLeft) {
   return `${minutes}:${seconds} remaining`;
 }
 
+function renderMarkdown(text) {
+  return { __html: marked.parse(text) };
+}
+
 function actionLabel({ step, isLocked, secondsLeft, isAiLoading, isReask = false }) {
   if (isAiLoading) return 'Getting feedback...';
   if (isLocked) return formatCountdown(secondsLeft);
@@ -15,7 +20,7 @@ function actionLabel({ step, isLocked, secondsLeft, isAiLoading, isReask = false
     if (isReask) {
       return step?.skill === 'socratic_question' ? 'Ask another question' : 'Explain again';
     }
-    return 'Get feedback';
+    return 'Get AI feedback';
   }
   if (step?.activity === 'generate') return 'Unlock worked explanation';
   if (step?.activity === 'display') return 'Continue';
@@ -80,9 +85,9 @@ export function GatePanel({ session, step, draft, onDraftChange, feedback, now, 
       )}
 
       {feedback && (
-        <article className="feedback">
+        <article className="feedback markdown-content">
           <b>{reaskHint ? 'Try again' : 'AI feedback'}</b>
-          <p>{feedback}</p>
+          <div dangerouslySetInnerHTML={renderMarkdown(feedback)} />
         </article>
       )}
 

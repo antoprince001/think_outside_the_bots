@@ -55,7 +55,7 @@ describe('SessionShell', () => {
     session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(150) }] };
     const onSessionChange = renderShell(session);
 
-    fireEvent.click(screen.getByRole('button', { name: /get feedback/i }));
+    fireEvent.click(screen.getByRole('button', { name: /get ai feedback/i }));
 
     await waitFor(() => {
       expect(onSessionChange).toHaveBeenCalled();
@@ -75,7 +75,7 @@ describe('SessionShell', () => {
     session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(150) }] };
     renderShell(session, vi.fn(), [googleConnection]);
 
-    fireEvent.click(screen.getByRole('button', { name: /get feedback/i }));
+    fireEvent.click(screen.getByRole('button', { name: /get ai feedback/i }));
 
     await waitFor(() => expect(providerAdapter.requestFeedback).toHaveBeenCalledWith(expect.objectContaining({
       connection: googleConnection,
@@ -95,7 +95,7 @@ describe('SessionShell', () => {
     session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(150) }] };
     const onSessionChange = renderShell(session);
 
-    fireEvent.click(screen.getByRole('button', { name: /get feedback/i }));
+    fireEvent.click(screen.getByRole('button', { name: /get ai feedback/i }));
 
     await waitFor(() => {
       expect(onSessionChange).toHaveBeenCalledWith(

@@ -15,7 +15,7 @@ steps:
     activity: write
     instruction: Write a full draft attempt at the task. Your answer should be substantial and show your reasoning before AI feedback appears.
     validation:
-      minCharacters: 600
+      minCharacters: 150
     output: draft
   - id: feedback
     actor: ai

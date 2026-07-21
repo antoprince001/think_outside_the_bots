@@ -72,7 +72,7 @@ describe('GatePanel', () => {
         onAction={vi.fn()}
       />
     );
-    expect(screen.getByText('500 characters until feedback can unlock.')).toBeInTheDocument();
+    expect(screen.getByText('50 characters until feedback can unlock.')).toBeInTheDocument();
   });
 
   it('keeps the action disabled below the long-draft minimum and enables it once met', () => {
