@@ -62,3 +62,9 @@ Then open http://localhost:8080/.
 
 - Development uses `pnpm` as the package manager. If you prefer `npm`/`yarn`, adapt commands accordingly.
 
+## Usage of Codex and GPT 5.6
+
+Built the prototype over a single weekend using Spec-Driven Development with GitHub Speckit, Codex, and GPT-5.6.
+Rather than treating AI as a code generator, I used it as a collaborative thought partner throughout the design process. GPT-5.6 helped refine the problem statement, challenge assumptions, iterate on product concepts, and translate specifications into working features. Spec-driven development made it much easier to evolve the application without losing clarity as the product expanded.
+
+
