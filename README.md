@@ -1,16 +1,50 @@
-# React + Vite
+# Think Outside The Bots
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Minimal React + Vite application for interactive learning workflows.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Install dependencies and start the dev server:
 
-## React Compiler
+```bash
+pnpm install
+pnpm dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Open http://localhost:5174/ in your browser.
 
-## Expanding the Oxlint configuration
+## Build for production
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```bash
+pnpm build
+# preview the production build locally
+pnpm preview
+```
+
+## Run with Docker
+
+The repository includes a multi-stage `Dockerfile` that builds the app with `pnpm` and serves the static `dist` via `nginx`.
+
+Build the image:
+
+```bash
+docker build -t think-outside-bots .
+```
+
+Run the container (serves on port 80 inside the container):
+
+```bash
+docker run --rm -p 8080:80 think-outside-bots
+```
+
+Then open http://localhost:8080/.
+
+## Security notes & API key handling
+
+- API keys are intentionally stored only in browser `sessionStorage` and in-memory via `src/services/credential-store.js`. Keys are not persisted to `localStorage` and are never written into persisted user records or exported artifacts.
+- The app currently sends requests directly from the browser to provider SDKs using the user's key (see `src/services/provider-adapter.js`). This means the key is present in the user's browser and will be used in outgoing network requests from the client. 
+
+## Notes
+
+- Development uses `pnpm` as the package manager. If you prefer `npm`/`yarn`, adapt commands accordingly.
+
