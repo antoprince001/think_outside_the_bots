@@ -1,3 +1,6 @@
+import { parse } from 'yaml';
+import { uid } from './uid';
+
 export function safeFilename(name, fallback = 'export') {
   const cleaned = String(name || '')
     .trim()
@@ -64,4 +67,51 @@ export function workflowToYaml(workflow) {
     lines.push(`  ${key}: ${value}`);
   });
   return lines.join('\n');
+}
+
+export function workflowToMarkdown(workflow) {
+  return ['# Workflow export', '', '```yaml', workflowToYaml(workflow), '```'].join('\n');
+}
+
+function extractYamlPayload(text) {
+  const trimmed = String(text ?? '').trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const fencedBlock = trimmed.match(/```(?:yaml|yml|text)?\s*([\s\S]*?)\s*```/i);
+  if (fencedBlock?.[1]) {
+    return fencedBlock[1].trim();
+  }
+
+  return trimmed.replace(/^#.*$/gm, '').trim();
+}
+
+export function parseWorkflowText(text) {
+  const trimmed = String(text ?? '').trim();
+  if (!trimmed) {
+    throw new Error('The selected file is empty.');
+  }
+
+  const yamlPayload = extractYamlPayload(trimmed);
+  if (!yamlPayload) {
+    throw new Error('The selected file is empty.');
+  }
+
+  const parsed = parse(yamlPayload);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('The selected file is not a valid workflow export.');
+  }
+
+  return {
+    id: parsed.id || uid(),
+    name: parsed.name || 'Imported workflow',
+    kind: parsed.kind || 'custom',
+    description: parsed.description || 'Imported workflow.',
+    inputs: Array.isArray(parsed.inputs) ? parsed.inputs : ['problem'],
+    variables: parsed.variables && typeof parsed.variables === 'object' && !Array.isArray(parsed.variables) ? parsed.variables : {},
+    steps: Array.isArray(parsed.steps) ? parsed.steps : [],
+    outputs: parsed.outputs && typeof parsed.outputs === 'object' && !Array.isArray(parsed.outputs) ? parsed.outputs : {},
+    configuration: parsed.configuration && typeof parsed.configuration === 'object' && !Array.isArray(parsed.configuration) ? parsed.configuration : {},
+  };
 }

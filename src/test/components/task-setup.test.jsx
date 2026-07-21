@@ -73,11 +73,13 @@ describe('TaskSetup', () => {
     expect(props.onFreezeDurationChange).toHaveBeenCalledWith(600);
   });
 
-  it('shows export and delete controls for custom workflows', () => {
+  it('shows export controls for preset workflows and delete controls for custom workflows', () => {
     const custom = { id: 'custom-1', name: 'My Graph', kind: 'custom', description: 'Custom graph', steps: [] };
     const props = renderSetup({ workflows: [...presets, custom] });
+    fireEvent.click(screen.getByRole('button', { name: /export feynman/i }));
     fireEvent.click(screen.getByRole('button', { name: /export my graph/i }));
     fireEvent.click(screen.getByRole('button', { name: /delete my graph/i }));
+    expect(props.onExportWorkflow).toHaveBeenCalledWith(presets.find((workflow) => workflow.id === 'feynman'));
     expect(props.onExportWorkflow).toHaveBeenCalledWith(custom);
     expect(props.onDeleteWorkflow).toHaveBeenCalledWith(custom.id);
   });

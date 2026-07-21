@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { WorkflowBuilder } from '../../components/workflow-builder';
 
 function renderBuilder() {
@@ -75,5 +75,59 @@ describe('WorkflowBuilder', () => {
     fireEvent.click(screen.getByRole('button', { name: /save workflow/i }));
     const feedbackStep = store.workflows[0].steps.find((step) => step.activity === 'feedback');
     expect(feedbackStep.configuration.prompt).toBe('Ask a Socratic question about the weakest assumption.');
+  });
+
+  it('imports a workflow markdown file into the builder editor', async () => {
+    renderBuilder();
+
+    class MockFileReader {
+      constructor() {
+        this.onload = null;
+      }
+
+      readAsText() {
+        const content = `# Workflow export
+
+\`\`\`yaml
+version: "1.0.0"
+id: imported-workflow
+name: Imported workflow
+kind: custom
+description: Imported workflow
+inputs:
+  - problem
+variables: {}
+steps:
+  - id: node-1
+    actor: system
+    activity: display
+    instruction: Intro
+    configuration:
+      message: Welcome
+  - id: node-2
+    actor: learner
+    activity: write
+    instruction: Respond
+    validation:
+      minCharacters: 160
+    output: response2
+outputs:
+  answer: "{{vars.response2}}"
+\`\`\``;
+        this.result = content;
+        this.onload?.({ target: { result: content } });
+      }
+    }
+
+    vi.stubGlobal('FileReader', MockFileReader);
+
+    fireEvent.change(screen.getByLabelText(/import workflow/i), {
+      target: { files: [new File(['content'], 'workflow.md', { type: 'text/markdown' })] },
+    });
+
+    await waitFor(() => expect(screen.getByLabelText(/workflow name/i)).toHaveValue('Imported workflow'));
+    expect(screen.getByDisplayValue('Intro')).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 });

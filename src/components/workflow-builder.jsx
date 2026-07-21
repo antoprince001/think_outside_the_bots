@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Bot, Clock, MessageSquare, Plus, Trash2, UserRound } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, Bot, Clock, MessageSquare, Plus, Trash2, Upload, UserRound } from 'lucide-react';
 import { getBuilderNodeTypes } from '../workflows/workflow-model';
 import { validateWorkflow } from '../workflows/validate-workflow';
+import { parseWorkflowText, workflowToMarkdown } from '../utils/export-text';
 import { uid } from '../utils/uid';
 
 const MIN_CHARACTERS_FLOOR = 1;
@@ -104,7 +105,7 @@ function stepForNode(node, index, nodes) {
   };
 }
 
-function buildWorkflow(name, nodes) {
+function buildWorkflow(name, nodes, workflowId = uid()) {
   const steps = nodes.map(stepForNode);
   const variables = {};
   steps.forEach((step) => {
@@ -118,7 +119,7 @@ function buildWorkflow(name, nodes) {
   const outputs = lastStepWithOutput ? { answer: `{{vars.${lastStepWithOutput.output}}}` } : {};
 
   return {
-    id: uid(),
+    id: workflowId,
     name,
     kind: 'custom',
     description: 'A custom visual learning workflow.',
@@ -130,6 +131,55 @@ function buildWorkflow(name, nodes) {
       reaskEnabled: true,
       reaskLimit: 3,
     },
+  };
+}
+
+function nodeFromStep(step) {
+  const activity = step?.activity ?? step?.type;
+  const type = activity === 'display' || activity === 'write' || activity === 'feedback' || activity === 'generate' || activity === 'timer'
+    ? activity
+    : 'display';
+  const definition = NODE_TYPES[type] ?? NODE_TYPES.display;
+  const defaults = definition.defaults ?? {};
+
+  if (type === 'display') {
+    return {
+      id: uid(),
+      type,
+      ...defaults,
+      title: step?.instruction || defaults.title,
+      text: step?.configuration?.message || step?.instruction || defaults.text,
+    };
+  }
+
+  if (type === 'write') {
+    return {
+      id: uid(),
+      type,
+      ...defaults,
+      title: defaults.title,
+      text: step?.instruction || defaults.text,
+      minCharacters: step?.validation?.minCharacters ?? defaults.minCharacters ?? 120,
+    };
+  }
+
+  if (type === 'timer') {
+    return {
+      id: uid(),
+      type,
+      ...defaults,
+      title: step?.instruction || defaults.title,
+      text: step?.configuration?.message || defaults.text,
+      durationSeconds: step?.configuration?.durationSeconds ?? defaults.durationSeconds ?? 180,
+    };
+  }
+
+  return {
+    id: uid(),
+    type,
+    ...defaults,
+    title: step?.instruction || defaults.title,
+    text: step?.configuration?.prompt || step?.instruction || defaults.text,
   };
 }
 
@@ -151,10 +201,13 @@ function moveNode(nodes, index, direction) {
  * logic.
  */
 export function WorkflowBuilder({ persist, onSaved }) {
+  const inputRef = useRef(null);
   const [name, setName] = useState('My study workflow');
   const [nodes, setNodes] = useState(INITIAL_NODES);
+  const [workflowId, setWorkflowId] = useState(() => uid());
+  const [importError, setImportError] = useState('');
 
-  const workflow = useMemo(() => buildWorkflow(name, nodes), [name, nodes]);
+  const workflow = useMemo(() => buildWorkflow(name, nodes, workflowId), [name, nodes, workflowId]);
   const errors = useMemo(() => validateWorkflow(workflow), [workflow]);
 
   function addNode(type) {
@@ -167,54 +220,34 @@ export function WorkflowBuilder({ persist, onSaved }) {
     onSaved(workflow);
   }
 
-  const yamlExport = useMemo(() => {
-    const lines = [];
-    lines.push('version: "1.0.0"');
-    lines.push(`id: ${workflow.id}`);
-    lines.push(`name: ${workflow.name}`);
-    lines.push(`kind: ${workflow.kind}`);
-    lines.push(`description: ${workflow.description}`);
-    lines.push('inputs:');
-    lines.push('  - problem');
-    lines.push('variables:');
-    Object.entries(workflow.variables).forEach(([key, value]) => {
-      lines.push(`  ${key}: ${value === null ? 'null' : value}`);
-    });
-    lines.push('steps:');
-    workflow.steps.forEach((step) => {
-      lines.push(`  - id: ${step.id}`);
-      lines.push(`    actor: ${step.actor}`);
-      lines.push(`    activity: ${step.activity}`);
-      if (step.instruction) lines.push(`    instruction: ${step.instruction}`);
-      if (step.validation) {
-        lines.push('    validation:');
-        lines.push(`      minCharacters: ${step.validation.minCharacters}`);
+  function handleImportWorkflow(event) {
+    const [file] = event.target.files || [];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const importedWorkflow = parseWorkflowText(reader.result);
+        setName(importedWorkflow.name || 'Imported workflow');
+        setWorkflowId(importedWorkflow.id || uid());
+        setNodes((importedWorkflow.steps || []).map(nodeFromStep));
+        setImportError('');
+      } catch (error) {
+        setImportError(error.message || 'Unable to import workflow.');
       }
-      if (step.configuration && Object.keys(step.configuration).length > 0) {
-        lines.push('    configuration:');
-        Object.entries(step.configuration).forEach(([key, value]) => {
-          lines.push(`      ${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`);
-        });
-      }
-      if (step.output) lines.push(`    output: ${step.output}`);
-      if (step.skill) lines.push(`    skill: ${step.skill}`);
-      if (step.inputs) {
-        lines.push('    inputs:');
-        Object.entries(step.inputs).forEach(([key, value]) => {
-          lines.push(`      ${key}: ${value}`);
-        });
-      }
-    });
-    lines.push('outputs:');
-    Object.entries(workflow.outputs).forEach(([key, value]) => {
-      lines.push(`  ${key}: ${value}`);
-    });
-    return lines.join('\n');
-  }, [workflow]);
+    };
+    reader.onerror = () => {
+      setImportError('Unable to read the selected workflow file.');
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }
+
+  const markdownExport = useMemo(() => workflowToMarkdown(workflow), [workflow]);
 
   function downloadYaml() {
-    const filename = `${workflow.name ? workflow.name.replace(/\s+/g, '_') : 'workflow'}.txt`;
-    const blob = new Blob([yamlExport], { type: 'text/plain;charset=utf-8' });
+    const filename = `${workflow.name ? workflow.name.replace(/\s+/g, '_') : 'workflow'}.md`;
+    const blob = new Blob([markdownExport], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -228,7 +261,16 @@ export function WorkflowBuilder({ persist, onSaved }) {
   return (
     <section className="panel workflow-editor">
       <h2>Create a workflow</h2>
-      <input value={name} onChange={(event) => setName(event.target.value)} aria-label="Workflow name" />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <input value={name} onChange={(event) => setName(event.target.value)} aria-label="Workflow name" />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" className="secondary" onClick={() => inputRef.current?.click()}>
+            <Upload size={14} /> Import workflow
+          </button>
+          <input ref={inputRef} type="file" accept=".md,.markdown,.txt,.yaml,.yml,text/plain,text/markdown" aria-label="Import workflow" onChange={handleImportWorkflow} style={{ display: 'none' }} />
+        </div>
+      </div>
+      {importError ? <p className="error">{importError}</p> : null}
 
       <div className="node-toolbar" aria-label="Add workflow activity">
         {Object.entries(NODE_TYPES).map(([type, definition]) => {
@@ -317,10 +359,10 @@ export function WorkflowBuilder({ persist, onSaved }) {
       ))}
 
       <div className="export-block">
-        <h3>Export YAML</h3>
+        <h3>Export Markdown</h3>
         <div className="export-card">
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: 8}}>
-            <pre style={{margin:0,flex:1,overflow:'auto'}}>{yamlExport}</pre>
+            <pre style={{margin:0,flex:1,overflow:'auto'}}>{markdownExport}</pre>
             <div style={{marginLeft:8}}>
               <button type="button" className="secondary" onClick={downloadYaml} aria-label="Download workflow as text">
                 Download

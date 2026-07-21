@@ -1,4 +1,4 @@
 fileignoreconfig:
-- filename: src/components/workflow-builder.jsx
-  checksum: e4101c7566e2a323828f6e36086a05b5b3b6dee9779625a4f86f499343cbff68
+- filename: src/utils/export-text.js
+  checksum: e34ae897f587cef1d0df07b5c26f0c84139c5adbed793ea502c777031fe4317f
 version: ""

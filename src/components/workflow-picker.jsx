@@ -23,16 +23,16 @@ export function WorkflowPicker({ workflows, selectedId, onSelect, onDelete, onEx
             <strong>{workflow.name}</strong>
             <span>{workflow.description}</span>
           </button>
-          {workflow.kind === 'custom' && (
-            <div className="mode-actions" aria-label={`${workflow.name} actions`}>
-              <button type="button" className="icon-button" onClick={() => onExport?.(workflow)} aria-label={`Export ${workflow.name}`}>
-                <Download size={15} />
-              </button>
+          <div className="mode-actions" aria-label={`${workflow.name} actions`}>
+            <button type="button" className="icon-button" onClick={() => onExport?.(workflow)} aria-label={`Export ${workflow.name}`}>
+              <Download size={15} />
+            </button>
+            {workflow.kind === 'custom' && (
               <button type="button" className="icon-button danger" onClick={() => onDelete?.(workflow.id)} aria-label={`Delete ${workflow.name}`}>
                 <Trash2 size={15} />
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ))}
     </div>
