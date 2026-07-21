@@ -48,8 +48,8 @@ export function validateWorkflow(workflow) {
 
     if (step.activity === 'timer') {
       const duration = Number(step.configuration?.durationSeconds);
-      if (!Number.isInteger(duration) || duration < 60 || duration > 3600) {
-        errors.push(`Step ${index + 1} timer duration must be 60-3,600 seconds.`);
+      if (!Number.isInteger(duration) || duration < 30 || duration > 3600) {
+        errors.push(`Step ${index + 1} timer duration must be 30-3,600 seconds.`);
       }
     }
 

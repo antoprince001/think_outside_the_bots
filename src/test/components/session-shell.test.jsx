@@ -67,7 +67,7 @@ describe('SessionShell', () => {
   });
 
   it('requests feedback using the Google provider from the session snapshot', async () => {
-    const googleConnection = { id: 'google-1', label: 'Gemini', provider: 'google', model: 'gemini-2.5-flash' };
+    const googleConnection = { id: 'google-1', label: 'Gemini', provider: 'google', model: 'gemini-3.6-flash' };
     vi.spyOn(providerAdapter, 'requestFeedback').mockResolvedValue({
       kind: 'feedback',
       content: 'Google feedback',

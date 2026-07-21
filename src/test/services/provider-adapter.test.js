@@ -10,6 +10,7 @@ vi.mock('ai', () => ({ generateText }));
 vi.mock('@ai-sdk/openai', () => ({ createOpenAI }));
 vi.mock('@ai-sdk/google', () => ({ createGoogle }));
 
+import { GEMINI_MODELS, MAX_OUTPUT_TOKENS_DEFAULT, OPENAI_MODELS } from '../../constants';
 import { testConnection, requestFeedback, suggestAdaptiveWorkflowSequence, PROVIDERS } from '../../services/provider-adapter';
 
 describe('provider-adapter', () => {
@@ -24,6 +25,15 @@ describe('provider-adapter', () => {
 
   it('only exposes allow-listed providers', () => {
     expect(PROVIDERS.map((p) => p.id)).toEqual(['openai', 'google']);
+  });
+
+  it('uses shared provider model constants', () => {
+    expect(OPENAI_MODELS).toEqual(['gpt-5.4-mini', 'gpt-5.4']);
+    expect(GEMINI_MODELS).toEqual(['gemini-3.6-flash']);
+    expect(PROVIDERS).toEqual([
+      { id: 'openai', label: 'OpenAI', models: OPENAI_MODELS },
+      { id: 'google', label: 'Google Gemini', models: GEMINI_MODELS },
+    ]);
   });
 
   it('testConnection rejects an empty key without a network call', async () => {
@@ -58,7 +68,7 @@ describe('provider-adapter', () => {
     expect(createOpenAI).toHaveBeenCalledWith({ apiKey: 'sk-test' });
     expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
       model: { apiKey: 'sk-test', model: 'gpt-4.1-mini' },
-      maxOutputTokens: 1500,
+      maxOutputTokens: MAX_OUTPUT_TOKENS_DEFAULT,
     }));
   });
 
@@ -79,7 +89,7 @@ describe('provider-adapter', () => {
     generateText.mockResolvedValue({ text: 'Try checking the base case.' });
 
     const result = await requestFeedback({
-      connection: { provider: 'google', model: 'gemini-2.5-flash' },
+      connection: { provider: 'google', model: 'gemini-3.6-flash' },
       key: 'google-secret',
       task: 'Explain recursion',
       workflow: { id: 'feynman' },
@@ -90,7 +100,7 @@ describe('provider-adapter', () => {
     expect(createGoogle).toHaveBeenCalledWith({ apiKey: 'google-secret' });
     expect(createOpenAI).not.toHaveBeenCalled();
     expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
-      model: { apiKey: 'google-secret', model: 'gemini-2.5-flash' },
+      model: { apiKey: 'google-secret', model: 'gemini-3.6-flash' },
     }));
   });
 
@@ -120,7 +130,7 @@ describe('provider-adapter', () => {
     generateText.mockResolvedValue({ text: 'Try naming the missing assumption.' });
 
     await requestFeedback({
-      connection: { model: 'gemini-2.5-flash' },
+      connection: { model: 'gemini-3.6-flash' },
       key: 'google-secret',
       task: 'Explain recursion',
       workflow: { id: 'feynman' },
@@ -129,7 +139,7 @@ describe('provider-adapter', () => {
 
     expect(createGoogle).toHaveBeenCalledWith({ apiKey: 'google-secret' });
     expect(generateText).toHaveBeenCalledWith(expect.objectContaining({
-      model: { apiKey: 'google-secret', model: 'gemini-2.5-flash' },
+      model: { apiKey: 'google-secret', model: 'gemini-3.6-flash' },
     }));
   });
 });

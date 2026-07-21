@@ -40,14 +40,14 @@ describe('ModelConnections', () => {
     const { persist } = renderConnections();
 
     fireEvent.change(screen.getByLabelText('Provider'), { target: { value: 'google' } });
-    expect(screen.getByLabelText('Model')).toHaveValue('gemini-2.5-flash');
+    expect(screen.getByLabelText('Model')).toHaveValue('gemini-3.6-flash');
     fireEvent.change(screen.getByLabelText('API key'), { target: { value: 'google-key' } });
     fireEvent.click(screen.getByRole('button', { name: /test and save locally/i }));
 
     await waitFor(() => expect(persist).toHaveBeenCalled());
     expect(persist.mock.calls[0][0]).toBeTypeOf('function');
     expect(providerAdapter.testConnection).toHaveBeenCalledWith(
-      expect.objectContaining({ provider: 'google', model: 'gemini-2.5-flash' }),
+      expect.objectContaining({ provider: 'google', model: 'gemini-3.6-flash' }),
       'google-key',
     );
   });

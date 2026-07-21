@@ -7,11 +7,11 @@ import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogle } from '@ai-sdk/google';
 import { getAIInstruction, getWorkflowConfiguration } from '../workflows/workflow-model';
-import { MAX_OUTPUT_TOKENS_SMALL, MAX_OUTPUT_TOKENS_DEFAULT, MAX_OUTPUT_TOKENS_GENERATE, MAX_RETRIES } from '../constants';
+import { GEMINI_MODELS, MAX_OUTPUT_TOKENS_SMALL, MAX_OUTPUT_TOKENS_DEFAULT, MAX_OUTPUT_TOKENS_GENERATE, MAX_RETRIES, OPENAI_MODELS } from '../constants';
 
 export const PROVIDERS = [
-  { id: 'openai', label: 'OpenAI', models: ['gpt-5.4-mini', 'gpt-5.4'] },
-  { id: 'google', label: 'Google Gemini', models: ['gemini-2.5-flash'] },
+  { id: 'openai', label: 'OpenAI', models: OPENAI_MODELS },
+  { id: 'google', label: 'Google Gemini', models: GEMINI_MODELS },
 ];
 
 const DEFAULT_PROVIDER = PROVIDERS[0];

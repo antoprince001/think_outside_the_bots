@@ -3,6 +3,7 @@ import { WORKFLOW_STRATEGY_MODES } from '../workflows/workflow-model';
 import { WorkflowPicker } from './workflow-picker';
 
 const FREEZE_OPTIONS = [
+  { label: '30 sec', value: 30 },
   { label: '1 min', value: 60 },
   { label: '3 min', value: 180 },
   { label: '5 min', value: 300 },

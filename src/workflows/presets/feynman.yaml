@@ -15,7 +15,7 @@ steps:
     activity: write
     instruction: Explain the task in your own words, as if teaching someone new to it.
     validation:
-      minCharacters: 120
+      minCharacters: 60
     output: explanation
   - id: feedback
     actor: ai
