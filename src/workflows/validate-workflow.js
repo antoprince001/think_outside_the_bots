@@ -17,6 +17,14 @@ export function validateWorkflow(workflow) {
   let sawLearnerWrite = false;
   let generateCount = 0;
 
+  if ((workflowConfiguration.strategyMode === 'multiple' || workflowConfiguration.strategyMode === 'adaptive') && workflowConfiguration.workflowIds.length === 0) {
+    errors.push('Multiple and adaptive strategies need at least one selected workflow.');
+  }
+
+  if (workflowConfiguration.strategyMode === 'adaptive' && !workflowConfiguration.selectionPrompt.trim()) {
+    errors.push('Adaptive strategies need a selection prompt.');
+  }
+
   normalized.steps.forEach((rawStep, index) => {
     const step = normalizeStep(rawStep);
     if (!ACTORS.includes(step.actor)) {

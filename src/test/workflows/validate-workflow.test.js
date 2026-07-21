@@ -41,6 +41,22 @@ describe('validateWorkflow', () => {
     expect(errors.some((e) => e.includes('minimum characters'))).toBe(true);
   });
 
+  it('requires at least one workflow for multiple and adaptive strategies', () => {
+    const multipleErrors = validateWorkflow({
+      name: 'Multiple only',
+      configuration: { strategyMode: 'multiple', workflowIds: [] },
+      steps: [{ id: 'a', actor: 'learner', activity: 'write', instruction: 'Draft', validation: { minCharacters: 10 }, output: 'draft' }],
+    });
+    const adaptiveErrors = validateWorkflow({
+      name: 'Adaptive only',
+      configuration: { strategyMode: 'adaptive', workflowIds: [] },
+      steps: [{ id: 'a', actor: 'learner', activity: 'write', instruction: 'Draft', validation: { minCharacters: 10 }, output: 'draft' }],
+    });
+
+    expect(multipleErrors).toContain('Multiple and adaptive strategies need at least one selected workflow.');
+    expect(adaptiveErrors).toContain('Multiple and adaptive strategies need at least one selected workflow.');
+  });
+
   it('accepts legacy step types through normalization', () => {
     expect(validateWorkflow({
       name: 'Legacy',

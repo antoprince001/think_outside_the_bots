@@ -71,6 +71,20 @@ function normalizeSkillDefinitions(source) {
   );
 }
 
+export const WORKFLOW_APPROACH_DEFINITIONS = [
+  { id: 'feynman', label: 'Feynman', description: 'Explain it simply and check for gaps.' },
+  { id: 'socratic', label: 'Socratic', description: 'Ask guiding questions instead of giving answers.' },
+  { id: 'freeze', label: 'Freeze', description: 'Pause to reflect before responding.' },
+  { id: 'long-draft', label: 'Long draft', description: 'Build a fuller draft and refine it.' },
+  { id: 'spaced-repetition', label: 'Spaced repetition', description: 'Revisit the idea to reinforce it later.' },
+];
+
+export const WORKFLOW_STRATEGY_MODES = [
+  { id: 'single', label: 'Single path' },
+  { id: 'multiple', label: 'Multiple paths' },
+  { id: 'adaptive', label: 'Adaptive path' },
+];
+
 const metadataActivities = Array.isArray(parsedMetadata.activities) ? parsedMetadata.activities : DEFAULT_ACTIVITY_DEFINITIONS;
 const metadataActors = Array.isArray(parsedMetadata.actors) ? parsedMetadata.actors : DEFAULT_ACTOR_DEFINITIONS;
 const metadataSkills = normalizeSkillDefinitions(parsedMetadata.skills);
@@ -105,10 +119,23 @@ export function getWorkflowConfiguration(workflow = {}) {
   const config = workflow?.configuration ?? {};
   const reaskEnabled = config?.reaskEnabled ?? workflow?.reaskEnabled ?? REASK_ENABLED_BY_DEFAULT;
   const reaskLimit = Number(config?.reaskLimit ?? workflow?.reaskLimit ?? DEFAULT_REASK_LIMIT);
+  const strategyModeValue = config?.strategyMode ?? workflow?.strategyMode ?? 'single';
+  const strategyMode = strategyModeValue === 'adaptive' || strategyModeValue === 'dynamic' ? 'adaptive' : strategyModeValue === 'multiple' || strategyModeValue === 'hybrid' ? 'multiple' : 'single';
+  const approaches = Array.isArray(config?.approaches ?? workflow?.approaches)
+    ? (config?.approaches ?? workflow?.approaches).filter((item) => typeof item === 'string' && item.trim())
+    : [];
+  const workflowIds = Array.isArray(config?.workflowIds ?? workflow?.workflowIds)
+    ? (config?.workflowIds ?? workflow?.workflowIds).filter((item) => typeof item === 'string' && item.trim())
+    : [];
+  const selectionPrompt = config?.selectionPrompt ?? workflow?.selectionPrompt ?? '';
 
   return {
     reaskEnabled: reaskEnabled === true || reaskEnabled === 'true',
     reaskLimit: Number.isFinite(reaskLimit) && reaskLimit > 0 ? Math.min(Math.round(reaskLimit), 3) : DEFAULT_REASK_LIMIT,
+    strategyMode,
+    approaches,
+    workflowIds,
+    selectionPrompt: typeof selectionPrompt === 'string' ? selectionPrompt : '',
   };
 }
 

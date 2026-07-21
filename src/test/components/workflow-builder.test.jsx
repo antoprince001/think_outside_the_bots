@@ -77,6 +77,11 @@ describe('WorkflowBuilder', () => {
     expect(feedbackStep.configuration.prompt).toBe('Ask a Socratic question about the weakest assumption.');
   });
 
+  it('does not expose learning strategy controls in the workflow builder', () => {
+    renderBuilder();
+    expect(screen.queryByLabelText(/learning approach mode/i)).not.toBeInTheDocument();
+  });
+
   it('imports a workflow markdown file into the builder editor', async () => {
     renderBuilder();
 

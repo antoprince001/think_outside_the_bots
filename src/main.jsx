@@ -18,6 +18,73 @@ import './styles.css';
 const CLOCK_TICK_MS = 1000;
 const DEFAULT_FREEZE_SECONDS = 180;
 
+function buildCombinedWorkflow(workflows, strategyState) {
+  const selectedWorkflows = (strategyState?.selectedWorkflowIds ?? [])
+    .map((workflowId) => workflows.find((workflow) => workflow.id === workflowId))
+    .filter(Boolean);
+
+  if (selectedWorkflows.length <= 1) {
+    return selectedWorkflows[0] ?? workflows[0] ?? null;
+  }
+
+  const combinedSteps = [];
+  const combinedVariables = {};
+  const workflowLabels = [];
+
+  selectedWorkflows.forEach((workflow, workflowIndex) => {
+    const slug = String(workflow.name || workflow.id || `workflow-${workflowIndex + 1}`)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || `workflow-${workflowIndex + 1}`;
+    const outputNames = new Map();
+
+    (workflow.steps ?? []).forEach((step) => {
+      const nextStep = structuredClone(step);
+      const originalOutput = nextStep.output;
+      if (originalOutput) {
+        const renamedOutput = `${slug}-${originalOutput}`;
+        outputNames.set(originalOutput, renamedOutput);
+        nextStep.output = renamedOutput;
+      }
+
+      if (nextStep.inputs && typeof nextStep.inputs === 'object') {
+        Object.entries(nextStep.inputs).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            nextStep.inputs[key] = value.replace(/\{\{\s*vars\.([A-Za-z0-9_-]+)\s*\}\}/g, (_match, varName) => `{{vars.${outputNames.get(varName) ?? varName}}}`);
+          }
+        });
+      }
+
+      combinedSteps.push(nextStep);
+    });
+
+    workflowLabels.push(workflow.name || workflow.id);
+  });
+
+  combinedSteps.forEach((step) => {
+    if (step.output) combinedVariables[step.output] = null;
+  });
+
+  const finalStep = [...combinedSteps].reverse().find((step) => step.output);
+  return {
+    id: `combined-${Date.now()}`,
+    name: workflowLabels.join(' + '),
+    kind: 'custom',
+    description: 'A combined workflow built from multiple paths.',
+    inputs: ['problem'],
+    variables: combinedVariables,
+    steps: combinedSteps,
+    outputs: finalStep ? { answer: `{{vars.${finalStep.output}}}` } : {},
+    configuration: {
+      reaskEnabled: true,
+      reaskLimit: 3,
+      strategyMode: strategyState?.strategyMode ?? 'multiple',
+      selectionPrompt: strategyState?.selectionPrompt ?? '',
+      workflowIds: (strategyState?.selectedWorkflowIds ?? []).filter(Boolean),
+    },
+  };
+}
+
 function useClock() {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -32,6 +99,7 @@ function App() {
   const [task, setTask] = useState('');
   const [selectedWorkflowId, setSelectedWorkflowId] = useState(presets[0].id);
   const [freezeDurationSeconds, setFreezeDurationSeconds] = useState(DEFAULT_FREEZE_SECONDS);
+  const [workflowStrategy, setWorkflowStrategy] = useState({ strategyMode: 'single', selectedWorkflowIds: [presets[0].id], approaches: [], selectionPrompt: '' });
   const [session, setSession] = useState(null);
   const [activePanel, setActivePanel] = useState('home');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -43,6 +111,14 @@ function App() {
   const hasReadyConnection = Boolean(selectedConnection && getKey(selectedConnection.id));
 
   const persist = (mutator) => setStore(update(mutator));
+
+  useEffect(() => {
+    setWorkflowStrategy((current) => {
+      if (current.strategyMode !== 'single') return current;
+      if (current.selectedWorkflowIds.includes(selectedWorkflowId)) return current;
+      return { ...current, selectedWorkflowIds: [selectedWorkflowId] };
+    });
+  }, [selectedWorkflowId]);
 
   function saveSession(nextSession) {
     setSession(nextSession);
@@ -57,9 +133,25 @@ function App() {
     const workflow = selectedWorkflow.id === 'freeze'
       ? withTimerDuration(selectedWorkflow, freezeDurationSeconds)
       : selectedWorkflow;
+    const selectedWorkflowIds = (workflowStrategy.selectedWorkflowIds ?? []).filter(Boolean);
+    const resolvedWorkflow = (workflowStrategy.strategyMode === 'multiple' || workflowStrategy.strategyMode === 'adaptive')
+      ? buildCombinedWorkflow(workflows, { ...workflowStrategy, selectedWorkflowIds: selectedWorkflowIds.length > 0 ? selectedWorkflowIds : [selectedWorkflow.id] })
+      : workflow;
+    const configuredWorkflow = {
+      ...resolvedWorkflow,
+      configuration: {
+        ...(resolvedWorkflow.configuration ?? {}),
+        reaskEnabled: true,
+        reaskLimit: 3,
+        strategyMode: workflowStrategy.strategyMode,
+        workflowIds: selectedWorkflowIds.length > 0 ? selectedWorkflowIds : [selectedWorkflow.id],
+        approaches: workflowStrategy.strategyMode === 'adaptive' ? workflowStrategy.approaches : [],
+        selectionPrompt: workflowStrategy.strategyMode === 'adaptive' ? workflowStrategy.selectionPrompt : '',
+      },
+    };
     const newSession = createSession({
       task: task.trim(),
-      workflow,
+      workflow: configuredWorkflow,
       connection: selectedConnection,
     });
     persist((draft) => draft.sessions.unshift(newSession));
@@ -73,6 +165,36 @@ function App() {
 
   function handleSelectWorkflow(workflowId) {
     setSelectedWorkflowId(workflowId);
+    setWorkflowStrategy((current) => {
+      if (current.strategyMode === 'single') {
+        return { ...current, selectedWorkflowIds: [workflowId] };
+      }
+      const nextSelection = current.selectedWorkflowIds.includes(workflowId)
+        ? current.selectedWorkflowIds.filter((item) => item !== workflowId)
+        : [...current.selectedWorkflowIds, workflowId];
+      return { ...current, selectedWorkflowIds: nextSelection };
+    });
+  }
+
+  function handleStrategyModeChange(value) {
+    setWorkflowStrategy((current) => ({
+      ...current,
+      strategyMode: value,
+      selectedWorkflowIds: current.selectedWorkflowIds.length > 0 ? current.selectedWorkflowIds : [selectedWorkflowId],
+    }));
+  }
+
+  function handleStrategyApproachToggle(approachId) {
+    setWorkflowStrategy((current) => {
+      const nextApproaches = current.approaches.includes(approachId)
+        ? current.approaches.filter((item) => item !== approachId)
+        : [...current.approaches, approachId];
+      return { ...current, approaches: nextApproaches };
+    });
+  }
+
+  function handleSelectionPromptChange(value) {
+    setWorkflowStrategy((current) => ({ ...current, selectionPrompt: value }));
   }
 
   function handleConnectionSelect(connectionId) {
@@ -105,6 +227,10 @@ function App() {
     persist((draft) => {
       draft.workflows = draft.workflows.filter((workflow) => workflow.id !== workflowId);
     });
+    setWorkflowStrategy((current) => ({
+      ...current,
+      selectedWorkflowIds: current.selectedWorkflowIds.filter((id) => id !== workflowId),
+    }));
     if (selectedWorkflowId === workflowId) setSelectedWorkflowId(presets[0].id);
   }
 
@@ -154,6 +280,10 @@ function App() {
             onExportWorkflow={exportWorkflow}
             freezeDurationSeconds={freezeDurationSeconds}
             onFreezeDurationChange={setFreezeDurationSeconds}
+            workflowStrategy={workflowStrategy}
+            onStrategyModeChange={handleStrategyModeChange}
+            onStrategyApproachToggle={handleStrategyApproachToggle}
+            onSelectionPromptChange={handleSelectionPromptChange}
             hasReadyConnection={hasReadyConnection}
             onStart={startSession}
           />

@@ -15,6 +15,10 @@ function renderSetup(overrides = {}) {
     onExportWorkflow: vi.fn(),
     freezeDurationSeconds: 180,
     onFreezeDurationChange: vi.fn(),
+    workflowStrategy: { strategyMode: 'single', approaches: [], selectionPrompt: '' },
+    onStrategyModeChange: vi.fn(),
+    onStrategyApproachToggle: vi.fn(),
+    onSelectionPromptChange: vi.fn(),
     hasReadyConnection: false,
     onStart: vi.fn(),
     ...overrides,
@@ -71,6 +75,12 @@ describe('TaskSetup', () => {
     const props = renderSetup({ selectedWorkflowId: freeze.id, selectedWorkflow: freeze });
     fireEvent.click(screen.getByRole('radio', { name: /10 min/i }));
     expect(props.onFreezeDurationChange).toHaveBeenCalledWith(600);
+  });
+
+  it('shows the learning mode selector near the top and the approach choices for adaptive flow', () => {
+    renderSetup({ workflowStrategy: { strategyMode: 'adaptive', approaches: ['feynman'], selectionPrompt: '' } });
+    expect(screen.getByLabelText(/learning mode/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/include feynman/i)).toBeInTheDocument();
   });
 
   it('shows export controls for preset workflows and delete controls for custom workflows', () => {

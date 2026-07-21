@@ -33,6 +33,25 @@ export function workflowToYaml(workflow) {
   (workflow.inputs || []).forEach((input) => {
     lines.push(`  - ${input}`);
   });
+  if (workflow.configuration && Object.keys(workflow.configuration).length > 0) {
+    lines.push('configuration:');
+    Object.entries(workflow.configuration).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        lines.push(`  ${key}:`);
+        value.forEach((item) => {
+          lines.push(`    - ${item}`);
+        });
+      } else if (typeof value === 'string') {
+        lines.push(`  ${key}: ${value}`);
+      } else if (typeof value === 'boolean') {
+        lines.push(`  ${key}: ${value}`);
+      } else if (value === null) {
+        lines.push(`  ${key}: null`);
+      } else {
+        lines.push(`  ${key}: ${JSON.stringify(value)}`);
+      }
+    });
+  }
   lines.push('variables:');
   Object.entries(workflow.variables || {}).forEach(([key, value]) => {
     lines.push(`  ${key}: ${value === null ? 'null' : value}`);
