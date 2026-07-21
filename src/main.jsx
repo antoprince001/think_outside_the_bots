@@ -75,6 +75,24 @@ function App() {
     setSelectedWorkflowId(workflowId);
   }
 
+  function handleConnectionSelect(connectionId) {
+    const selectedConnection = store.connections.find((connection) => connection.id === connectionId);
+    if (!selectedConnection || !session) return;
+
+    setSession((currentSession) => {
+      if (!currentSession || currentSession.id !== session.id) return currentSession;
+      return {
+        ...currentSession,
+        modelSnapshot: {
+          id: selectedConnection.id,
+          label: selectedConnection.label,
+          provider: selectedConnection.provider,
+          model: selectedConnection.model,
+        },
+      };
+    });
+  }
+
   function exportWorkflow(workflow) {
     downloadTextFile({
       filename: `${safeFilename(workflow.name, 'workflow')}.txt`,
@@ -120,7 +138,7 @@ function App() {
 
       <main>
         {activePanel === 'home' && <HomePage onGetStarted={() => setActivePanel('setup')} />}
-        {activePanel === 'models' && <ModelConnections store={store} persist={persist} />}
+        {activePanel === 'models' && <ModelConnections store={store} persist={persist} onConnectionSelect={handleConnectionSelect} />}
         {activePanel === 'workflow' && <WorkflowBuilder persist={persist} onSaved={handleWorkflowSaved} />}
 
         {!session && activePanel === 'setup' && (

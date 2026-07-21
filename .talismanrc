@@ -1,5 +1,5 @@
 
 fileignoreconfig:
-- filename: src/components/task-setup.jsx
-  checksum: f77981f5e93f412ac148adf647acd0b6ca2b42756cccc4cdd2bc8dd0c4176da4
+- filename: src/components/workflow-builder.jsx
+  checksum: c87d244eef9957790fbbb104e9767c44063ee662ce940857ba01d87b8e7a6932
 version: ""

@@ -81,9 +81,27 @@ describe('ModelConnections', () => {
       connections: [{ id: 'c1', label: 'My model', provider: 'openai', model: 'gpt-4.1-mini' }],
     };
     const { persist } = renderConnections(store);
-    fireEvent.click(screen.getByRole('button', { name: 'Use' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use My model' }));
     expect(persist).toHaveBeenCalled();
     expect(store.selectedConnection).toBe('c1');
+  });
+
+  it('shows the selected connection and switches to another one when requested', () => {
+    const store = {
+      ...emptyStore(),
+      selectedConnection: 'c1',
+      connections: [
+        { id: 'c1', label: 'First model', provider: 'openai', model: 'gpt-4.1-mini' },
+        { id: 'c2', label: 'Second model', provider: 'openai', model: 'gpt-4.1' },
+      ],
+    };
+    renderConnections(store);
+
+    expect(screen.getByRole('button', { name: /selected first model/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Use Second model' }));
+
+    expect(store.selectedConnection).toBe('c2');
+    expect(screen.getByRole('button', { name: /selected second model/i })).toBeInTheDocument();
   });
 
   it('removes a connection and its key together', () => {

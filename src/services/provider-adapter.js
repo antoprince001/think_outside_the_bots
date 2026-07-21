@@ -49,7 +49,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
     if (providerId === 'openai') {
       const openai = createOpenAI({ apiKey: key });
       result = await generateText({
-        model: openai(connection.model),
+        model: openai(`${connection.model}`), 
         system: instruction,
         prompt: promptFor({ task, step, inputs, contributions }),
         maxOutputTokens: 300,
@@ -57,7 +57,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
     } else if (providerId === 'google') {
       const google = createGoogle({ apiKey: key });
       result = await generateText({
-        model: google('gemini-2.5-flash'),
+        model: google(`${connection.model}`),
         system: instruction,
         prompt: promptFor({ task, step, inputs, contributions }),
         maxOutputTokens: 300,
