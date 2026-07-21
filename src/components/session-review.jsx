@@ -1,5 +1,6 @@
-import { LogOut } from 'lucide-react';
+import { Download, LogOut } from 'lucide-react';
 import { SessionTrail } from './session-trail';
+import { downloadTextFile, safeFilename } from '../utils/export-text';
 
 const EVENT_LABELS = {
   session_created: 'Session started',
@@ -19,21 +20,49 @@ function labelFor(event) {
   return EVENT_LABELS[event.type] ?? event.type;
 }
 
+function sessionReviewText(session) {
+  const lines = [
+    `Workflow: ${session.workflowSnapshot.name}`,
+    `Status: ${session.status}`,
+    `Task: ${session.task}`,
+    '',
+    'Learning trail',
+    ...((session.contributions ?? []).map((item) => `- Your ${item.kind ?? 'work'}: ${item.body}`)),
+    ...((session.feedbacks ?? []).map((item) => `- ${item.kind === 'final_answer' ? 'Worked explanation' : 'AI feedback'}: ${item.content}`)),
+    '',
+    'Timeline',
+    ...session.events.map((event) => `- ${labelFor(event)}: ${new Date(event.at).toLocaleString()}`),
+  ];
+  return lines.join('\n');
+}
+
 /**
  * Renders the chronological, safe-to-display event timeline for a
  * completed or in-progress session. Events never carry API keys or raw
  * provider payloads — see workflows/session-machine.js.
  */
 export function SessionReview({ session, onExit }) {
+  function handleExport() {
+    downloadTextFile({
+      filename: `${safeFilename(session.workflowSnapshot.name, 'session-review')}-review.txt`,
+      content: sessionReviewText(session),
+    });
+  }
+
   return (
     <section className="session">
       <div className="session-header">
         <span className="eyebrow">
           {session.workflowSnapshot.name} · {session.status === 'complete' ? 'Complete' : 'In progress'}
         </span>
-        <button type="button" className="secondary" onClick={onExit}>
-          <LogOut size={16} /> Exit
-        </button>
+        <div className="header-actions">
+          <button type="button" className="secondary" onClick={handleExport}>
+            <Download size={16} /> Export
+          </button>
+          <button type="button" className="secondary" onClick={onExit}>
+            <LogOut size={16} /> Exit
+          </button>
+        </div>
       </div>
       <h1>Session review</h1>
 

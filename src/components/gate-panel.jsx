@@ -13,6 +13,7 @@ function actionLabel({ step, isLocked, secondsLeft, isAiLoading }) {
   if (isLocked) return formatCountdown(secondsLeft);
   if (step?.activity === 'feedback') return 'Get feedback';
   if (step?.activity === 'generate') return 'Unlock worked explanation';
+  if (step?.activity === 'display') return 'Continue';
   return 'Submit my thinking';
 }
 
@@ -33,6 +34,7 @@ export function GatePanel({ session, step, draft, onDraftChange, feedback, now, 
   const minimumCharacters = minCharactersFor(step);
   const isLocked = isTimerStep && secondsLeft > 0;
   const showsDraftArea = step?.activity === 'write' || isTimerStep;
+  const displayMessage = step?.configuration?.message;
   const charactersRemaining = minimumCharacters
     ? Math.max(0, minimumCharacters - draft.trim().length)
     : null;
@@ -43,8 +45,15 @@ export function GatePanel({ session, step, draft, onDraftChange, feedback, now, 
       {isTimerStep && (
         <p className="timer" role="status">
           <Timer size={18} />
-          {formatCountdown(secondsLeft)} — keep drafting; AI stays paused.
+          {formatCountdown(secondsLeft)} — {displayMessage || 'keep drafting; AI stays paused.'}
         </p>
+      )}
+
+      {step?.activity === 'display' && (
+        <article className="feedback system-message">
+          <b>{step.instruction || 'Note'}</b>
+          <p>{displayMessage}</p>
+        </article>
       )}
 
       {showsDraftArea && (

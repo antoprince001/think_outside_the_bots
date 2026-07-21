@@ -25,11 +25,12 @@ export async function testConnection(_connection, key) {
   return { status: 'valid' };
 }
 
-function promptFor({ task, inputs = {}, contributions = [] }) {
+function promptFor({ task, step, inputs = {}, contributions = [] }) {
   const inputLines = Object.entries(inputs).map(([key, value]) => `${key}: ${value}`).join('\n');
   const latestContribution = contributions.at(-1)?.body ?? '';
   return [
     `Problem: ${task}`,
+    step?.configuration?.prompt && `Activity request: ${step.configuration.prompt}`,
     inputLines && `Workflow inputs:\n${inputLines}`,
     latestContribution && `Latest learner work: ${latestContribution}`,
   ].filter(Boolean).join('\n\n');
@@ -50,7 +51,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
       result = await generateText({
         model: openai(connection.model),
         system: instruction,
-        prompt: promptFor({ task, inputs, contributions }),
+        prompt: promptFor({ task, step, inputs, contributions }),
         maxOutputTokens: 300,
       });
     } else if (providerId === 'google') {
@@ -58,7 +59,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
       result = await generateText({
         model: google('gemini-2.5-flash'),
         system: instruction,
-        prompt: promptFor({ task, inputs, contributions }),
+        prompt: promptFor({ task, step, inputs, contributions }),
         maxOutputTokens: 300,
       });
     } else {

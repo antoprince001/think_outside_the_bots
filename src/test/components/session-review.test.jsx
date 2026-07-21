@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SessionReview } from '../../components/session-review';
 import { createSession } from '../../workflows/session-machine';
@@ -7,6 +7,16 @@ import { presets } from '../../workflows/presets';
 const feynman = presets.find((p) => p.id === 'feynman');
 
 describe('SessionReview', () => {
+  beforeEach(() => {
+    URL.createObjectURL = vi.fn(() => 'blob:review');
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders the ordered event timeline', () => {
     const session = createSession({ task: 'Explain recursion', workflow: feynman, connection: null });
     render(<SessionReview session={session} />);
@@ -44,5 +54,14 @@ describe('SessionReview', () => {
     render(<SessionReview session={session} onExit={onExit} />);
     fireEvent.click(screen.getByRole('button', { name: /exit/i }));
     expect(onExit).toHaveBeenCalledTimes(1);
+  });
+
+  it('exports the session review as a text file', () => {
+    const session = createSession({ task: 'Explain recursion', workflow: feynman, connection: null });
+    session.contributions.push({ id: '1', kind: 'explanation', body: 'My explanation text' });
+    render(<SessionReview session={session} onExit={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /export/i }));
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:review');
   });
 });

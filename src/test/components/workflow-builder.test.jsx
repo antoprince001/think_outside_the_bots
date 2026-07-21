@@ -18,7 +18,7 @@ describe('WorkflowBuilder', () => {
 
   it('shows a validation message and disables save when the minimum is out of range', () => {
     renderBuilder();
-    fireEvent.change(screen.getByLabelText(/minimum draft characters/i), {
+    fireEvent.change(screen.getByLabelText(/minimum characters/i), {
       target: { value: '20000' },
     });
     expect(screen.getByText(/minimum characters must be 1-10,000/i)).toBeInTheDocument();
@@ -46,17 +46,34 @@ describe('WorkflowBuilder', () => {
   it('enforces exactly one learner-contribution gate before AI feedback in the saved sequence', () => {
     const { store } = renderBuilder();
     fireEvent.click(screen.getByRole('button', { name: /save workflow/i }));
-    const [draftStep, feedbackStep] = store.workflows[0].steps;
+    const [, draftStep, feedbackStep] = store.workflows[0].steps;
     expect(draftStep).toEqual(expect.objectContaining({
       actor: 'learner',
       activity: 'write',
-      output: 'draft',
+      output: 'response2',
     }));
     expect(feedbackStep).toEqual(expect.objectContaining({
       actor: 'ai',
       activity: 'feedback',
       skill: 'draft_feedback',
-      output: 'feedback',
+      output: 'feedback3',
     }));
+  });
+
+  it('lets the user add a timer node to the visual graph', () => {
+    const { store } = renderBuilder();
+    fireEvent.click(screen.getByRole('button', { name: /timer/i }));
+    fireEvent.click(screen.getByRole('button', { name: /save workflow/i }));
+    expect(store.workflows[0].steps.some((step) => step.activity === 'timer')).toBe(true);
+  });
+
+  it('stores custom AI prompt text in the feedback node configuration', () => {
+    const { store } = renderBuilder();
+    fireEvent.change(screen.getAllByLabelText(/what to ask ai/i)[0], {
+      target: { value: 'Ask a Socratic question about the weakest assumption.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /save workflow/i }));
+    const feedbackStep = store.workflows[0].steps.find((step) => step.activity === 'feedback');
+    expect(feedbackStep.configuration.prompt).toBe('Ask a Socratic question about the weakest assumption.');
   });
 });

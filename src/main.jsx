@@ -12,6 +12,7 @@ import { load, update } from './services/local-store';
 import { createSession } from './workflows/session-machine';
 import { presets } from './workflows/presets';
 import { withTimerDuration } from './workflows/workflow-model';
+import { downloadTextFile, safeFilename } from './utils/export-text';
 import './styles.css';
 
 const CLOCK_TICK_MS = 1000;
@@ -29,7 +30,6 @@ function useClock() {
 function App() {
   const [store, setStore] = useState(load);
   const [task, setTask] = useState('');
-  const [fileInput, setFileInput] = useState(null);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState(presets[0].id);
   const [freezeDurationSeconds, setFreezeDurationSeconds] = useState(DEFAULT_FREEZE_SECONDS);
   const [session, setSession] = useState(null);
@@ -53,16 +53,12 @@ function App() {
   }
 
   function startSession() {
-    const hasTaskInput = task.trim() || (selectedWorkflow.kind === 'custom' && fileInput);
-    if (!hasTaskInput || !hasReadyConnection) return;
-    const taskWithFile = fileInput && selectedWorkflow.kind === 'custom'
-      ? `${task.trim() ? `${task.trim()}\n\n` : ''}Attached file: ${fileInput.name}\n\n${fileInput.content}`
-      : task.trim();
+    if (!task.trim() || !hasReadyConnection) return;
     const workflow = selectedWorkflow.id === 'freeze'
       ? withTimerDuration(selectedWorkflow, freezeDurationSeconds)
       : selectedWorkflow;
     const newSession = createSession({
-      task: taskWithFile,
+      task: task.trim(),
       workflow,
       connection: selectedConnection,
     });
@@ -77,7 +73,20 @@ function App() {
 
   function handleSelectWorkflow(workflowId) {
     setSelectedWorkflowId(workflowId);
-    if (workflows.find((workflow) => workflow.id === workflowId)?.kind !== 'custom') setFileInput(null);
+  }
+
+  function exportWorkflow(workflow) {
+    downloadTextFile({
+      filename: `${safeFilename(workflow.name, 'workflow')}.txt`,
+      content: JSON.stringify(workflow, null, 2),
+    });
+  }
+
+  function deleteWorkflow(workflowId) {
+    persist((draft) => {
+      draft.workflows = draft.workflows.filter((workflow) => workflow.id !== workflowId);
+    });
+    if (selectedWorkflowId === workflowId) setSelectedWorkflowId(presets[0].id);
   }
 
   return (
@@ -122,10 +131,10 @@ function App() {
             selectedWorkflowId={selectedWorkflowId}
             selectedWorkflow={selectedWorkflow}
             onSelectWorkflow={handleSelectWorkflow}
+            onDeleteWorkflow={deleteWorkflow}
+            onExportWorkflow={exportWorkflow}
             freezeDurationSeconds={freezeDurationSeconds}
             onFreezeDurationChange={setFreezeDurationSeconds}
-            fileInput={fileInput}
-            onFileInputChange={setFileInput}
             hasReadyConnection={hasReadyConnection}
             onStart={startSession}
           />

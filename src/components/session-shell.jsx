@@ -97,6 +97,10 @@ export function SessionShell({ session, onSessionChange, connections, now, onExi
       onSessionChange(submit(session, draft));
       return;
     }
+    if (step?.activity === 'display') {
+      onSessionChange(advance(session));
+      return;
+    }
     if (step?.activity === 'feedback') {
       requestAiActivity();
       return;

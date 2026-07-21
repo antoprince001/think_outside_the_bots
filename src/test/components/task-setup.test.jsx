@@ -11,10 +11,10 @@ function renderSetup(overrides = {}) {
     selectedWorkflowId: presets[0].id,
     selectedWorkflow: presets[0],
     onSelectWorkflow: vi.fn(),
+    onDeleteWorkflow: vi.fn(),
+    onExportWorkflow: vi.fn(),
     freezeDurationSeconds: 180,
     onFreezeDurationChange: vi.fn(),
-    fileInput: null,
-    onFileInputChange: vi.fn(),
     hasReadyConnection: false,
     onStart: vi.fn(),
     ...overrides,
@@ -71,5 +71,14 @@ describe('TaskSetup', () => {
     const props = renderSetup({ selectedWorkflowId: freeze.id, selectedWorkflow: freeze });
     fireEvent.click(screen.getByRole('radio', { name: /10 min/i }));
     expect(props.onFreezeDurationChange).toHaveBeenCalledWith(600);
+  });
+
+  it('shows export and delete controls for custom workflows', () => {
+    const custom = { id: 'custom-1', name: 'My Graph', kind: 'custom', description: 'Custom graph', steps: [] };
+    const props = renderSetup({ workflows: [...presets, custom] });
+    fireEvent.click(screen.getByRole('button', { name: /export my graph/i }));
+    fireEvent.click(screen.getByRole('button', { name: /delete my graph/i }));
+    expect(props.onExportWorkflow).toHaveBeenCalledWith(custom);
+    expect(props.onDeleteWorkflow).toHaveBeenCalledWith(custom.id);
   });
 });

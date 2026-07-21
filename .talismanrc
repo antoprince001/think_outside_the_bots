@@ -1,6 +1,5 @@
+
 fileignoreconfig:
-- filename: src/services/provider-adapter.js
-  checksum: 2fe85927dcd025411a23df04b2474a678ee370f1c5ab654e3d08e75a819a92de
-- filename: src/workflows/workflow-model.js
-  checksum: 5f596773eafd9c774a29b0d370e21e642ee5c42b2dce81a3149e646347b997ce
+- filename: src/components/task-setup.jsx
+  checksum: f77981f5e93f412ac148adf647acd0b6ca2b42756cccc4cdd2bc8dd0c4176da4
 version: ""
