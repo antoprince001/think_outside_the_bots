@@ -222,6 +222,8 @@ export function WorkflowBuilder({ persist, onSaved }) {
         })}
       </div>
 
+      <p className="flow-hint" role="note">Flow is read left to right →</p>
+
       <ol className="dag-editor" aria-label="Workflow graph">
         {nodes.map((node, index) => {
           const definition = NODE_TYPES[node.type];
@@ -229,7 +231,7 @@ export function WorkflowBuilder({ persist, onSaved }) {
           return (
             <li key={node.id} className={`dag-node ${node.type}`}>
               <div className="node-heading">
-                <span><Icon size={16} /> {definition.label}</span>
+                <span><span className="node-index">{index + 1}</span><Icon size={16} /> {definition.label}</span>
                 <div>
                   <button type="button" className="icon-button" onClick={() => setNodes((current) => moveNode(current, index, -1))} aria-label={`Move ${definition.label} up`} disabled={index === 0}>
                     <ArrowUp size={14} />
@@ -256,29 +258,33 @@ export function WorkflowBuilder({ persist, onSaved }) {
               </label>
 
               {node.type === 'write' && (
-                <label>
-                  Minimum characters
+                <div className="field-row">
+                  <label htmlFor={`min-${node.id}`}>Minimum characters</label>
                   <input
+                    id={`min-${node.id}`}
+                    className="small-input"
                     type="number"
                     min={MIN_CHARACTERS_FLOOR}
                     max={MIN_CHARACTERS_CEILING}
                     value={node.minCharacters}
                     onChange={(event) => setNodes((current) => updateNode(current, node.id, { minCharacters: event.target.value }))}
                   />
-                </label>
+                </div>
               )}
 
               {node.type === 'timer' && (
-                <label>
-                  Timer seconds
+                <div className="field-row">
+                  <label htmlFor={`timer-${node.id}`}>Timer seconds</label>
                   <input
+                    id={`timer-${node.id}`}
+                    className="small-input"
                     type="number"
                     min={60}
                     max={3600}
                     value={node.durationSeconds}
                     onChange={(event) => setNodes((current) => updateNode(current, node.id, { durationSeconds: event.target.value }))}
                   />
-                </label>
+                </div>
               )}
             </li>
           );
@@ -293,7 +299,9 @@ export function WorkflowBuilder({ persist, onSaved }) {
 
       <div className="export-block">
         <h3>Export YAML</h3>
-        <pre>{yamlExport}</pre>
+        <div className="export-card">
+          <pre>{yamlExport}</pre>
+        </div>
       </div>
 
       <button type="button" className="primary" disabled={errors.length > 0} onClick={handleSave}>
