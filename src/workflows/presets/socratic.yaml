@@ -7,7 +7,10 @@ inputs:
   - problem
 variables:
   response: null
+  response2: null
+  response3: null
   question: null
+  question2: null
 steps:
   - id: respond
     actor: learner
@@ -16,7 +19,7 @@ steps:
     validation:
       minCharacters: 40
     output: response
-  - id: question
+  - id: question1
     actor: ai
     activity: feedback
     skill: socratic_question
@@ -26,5 +29,48 @@ steps:
       problem: "{{inputs.problem}}"
       response: "{{vars.response}}"
     output: question
+
+  - id: reflect1
+    actor: learner
+    activity: write
+    instruction: Respond to the question above — explain what you tried or how you'd adjust your approach.
+    validation:
+      minCharacters: 20
+    inputs:
+      question: "{{vars.question}}"
+    output: response2
+
+  - id: question2
+    actor: ai
+    activity: feedback
+    skill: socratic_question
+    configuration:
+      prompt: If the learner revised their thinking, ask a short follow-up that pushes them closer to insight without revealing the solution.
+    inputs:
+      problem: "{{inputs.problem}}"
+      response: "{{vars.response2}}"
+    output: question2
+
+  - id: reflect2
+    actor: learner
+    activity: write
+    instruction: Give one final attempt in response to the follow-up question.
+    validation:
+      minCharacters: 20
+    inputs:
+      question: "{{vars.question2}}"
+    output: response3
+
+  - id: final_answer
+    actor: ai
+    activity: generate
+    skill: final_answer
+    configuration:
+      prompt: Provide a clear worked explanation and invite the learner to compare it to their reasoning.
+    inputs:
+      problem: "{{inputs.problem}}"
+      response: "{{vars.response3}}"
+    output: finalAnswer
 outputs:
-  latestQuestion: "{{vars.question}}"
+  latestQuestion: "{{vars.question2}}"
+  finalAnswer: "{{vars.finalAnswer}}"

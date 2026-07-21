@@ -10,7 +10,7 @@ function formatCountdown(secondsLeft) {
 }
 
 function renderMarkdown(text) {
-  return { __html: marked.parse(text) };
+  return { __html: marked.parse(text || '') };
 }
 
 function actionLabel({ step, isLocked, secondsLeft, isAiLoading, isReask = false }) {
@@ -64,7 +64,7 @@ export function GatePanel({ session, step, draft, onDraftChange, feedback, now, 
       {step?.activity === 'display' && (
         <article className="feedback system-message">
           <b>{step.instruction || 'Note'}</b>
-          <p>{displayMessage}</p>
+          <div dangerouslySetInnerHTML={renderMarkdown(displayMessage)} />
         </article>
       )}
 
