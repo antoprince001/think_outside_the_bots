@@ -9,7 +9,7 @@ ENV VITE_DEFAULT_PASSWORD=$VITE_DEFAULT_PASSWORD
 
 # Install pnpm and system deps needed for native builds
 RUN apk add --no-cache curl python3 make g++
-RUN npm install -g pnpm@8
+RUN npm install -g pnpm@9.15.0
 
 # Install dependencies based on lockfile first for caching
 COPY package.json pnpm-lock.yaml ./
