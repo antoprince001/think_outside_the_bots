@@ -1,5 +1,6 @@
 import { parse } from 'yaml';
 import presetMeta from './presets.yaml?raw';
+import { DEFAULT_REASK_LIMIT } from '../constants';
 import feynmanYaml from './presets/feynman.yaml?raw';
 import socraticYaml from './presets/socratic.yaml?raw';
 import freezeYaml from './presets/freeze.yaml?raw';
@@ -17,7 +18,7 @@ export const presets = presetSources.map((source) => {
     ...preset,
     configuration: {
       reaskEnabled: defaults.reaskEnabled ?? true,
-      reaskLimit: defaults.reaskLimit ?? 3,
+      reaskLimit: defaults.reaskLimit ?? DEFAULT_REASK_LIMIT,
       ...(preset.configuration ?? {}),
     },
   };

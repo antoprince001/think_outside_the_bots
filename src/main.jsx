@@ -16,9 +16,7 @@ import { withTimerDuration } from './workflows/workflow-model';
 import { buildCombinedWorkflow } from './workflows/combine-workflows';
 import { downloadTextFile, safeFilename, workflowToYaml } from './utils/export-text';
 import './styles.css';
-
-const CLOCK_TICK_MS = 1000;
-const DEFAULT_FREEZE_SECONDS = 180;
+import { CLOCK_TICK_MS, DEFAULT_FREEZE_SECONDS, DEFAULT_REASK_LIMIT, ICON_SIZE_LARGE, ICON_SIZE_MEDIUM, ICON_SIZE_SMALL } from './constants';
 
 function useClock() {
   const [now, setNow] = useState(Date.now());
@@ -94,8 +92,8 @@ function App() {
       ...resolvedWorkflow,
       configuration: {
         ...(resolvedWorkflow.configuration ?? {}),
-        reaskEnabled: true,
-        reaskLimit: 3,
+          reaskEnabled: true,
+          reaskLimit: DEFAULT_REASK_LIMIT,
         strategyMode: workflowStrategy.strategyMode,
         workflowIds: orderedWorkflowIds,
         approaches: workflowStrategy.strategyMode === 'adaptive' ? workflowStrategy.approaches : [],
@@ -190,28 +188,28 @@ function App() {
   return (
     <div className="app-shell">
       {!isSidebarOpen && (
-        <button type="button" className="menu-toggle" onClick={() => setIsSidebarOpen(true)} aria-label="Open navigation menu">
-          <Menu size={21} />
+          <button type="button" className="menu-toggle" onClick={() => setIsSidebarOpen(true)} aria-label="Open navigation menu">
+          <Menu size={ICON_SIZE_LARGE} />
         </button>
       )}
       {isSidebarOpen && <aside className="sidebar">
         <div className="sidebar-heading">
           <button type="button" className="brand" onClick={() => setActivePanel('home')} aria-label="Go to home page">
-            <Brain size={20} /> Think Outside The Bots
+            <Brain size={ICON_SIZE_MEDIUM} /> Think Outside The Bots
           </button>
           <button type="button" className="menu-toggle" onClick={() => setIsSidebarOpen(false)} aria-label="Close navigation menu">
-            <X size={20} />
+            <X size={ICON_SIZE_MEDIUM} />
           </button>
         </div>
         <nav aria-label="Application navigation">
           <button type="button" className={activePanel === 'setup' ? 'active' : ''} onClick={() => setActivePanel('setup')}>
-            <LayoutList size={16} /> Learning space
+            <LayoutList size={ICON_SIZE_SMALL} /> Learning space
           </button>
           <button type="button" className={activePanel === 'models' ? 'active' : ''} onClick={() => setActivePanel('models')}>
-            <KeyRound size={16} /> Models
+            <KeyRound size={ICON_SIZE_SMALL} /> Models
           </button>
           <button type="button" className={activePanel === 'workflow' ? 'active' : ''} onClick={() => setActivePanel('workflow')}>
-            <Plus size={16} /> Custom workflow
+            <Plus size={ICON_SIZE_SMALL} /> Custom workflow
           </button>
         </nav>
       </aside>}

@@ -5,6 +5,7 @@ import { createSession } from '../../workflows/session-machine';
 import { presets } from '../../workflows/presets';
 import * as credentialStore from '../../services/credential-store';
 import * as providerAdapter from '../../services/provider-adapter';
+import { TEST_SAMPLE_LENGTH } from '../../constants';
 
 const feynman = presets.find((p) => p.id === 'feynman');
 const socratic = presets.find((p) => p.id === 'socratic');
@@ -39,7 +40,7 @@ describe('SessionShell', () => {
     const session = createSession({ task: 'Explain recursion', workflow: feynman, connection });
     const onSessionChange = renderShell(session);
     fireEvent.change(screen.getByPlaceholderText(/write what you think/i), {
-      target: { value: 'a'.repeat(150) },
+      target: { value: 'a'.repeat(TEST_SAMPLE_LENGTH) },
     });
     fireEvent.click(screen.getByRole('button', { name: /submit my thinking/i }));
     expect(onSessionChange).toHaveBeenCalled();
@@ -52,7 +53,7 @@ describe('SessionShell', () => {
       content: 'Consider explaining the base case.',
     });
     let session = createSession({ task: 'x', workflow: feynman, connection });
-    session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(150) }] };
+    session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(TEST_SAMPLE_LENGTH) }] };
     const onSessionChange = renderShell(session);
 
     fireEvent.click(screen.getByRole('button', { name: /get ai feedback/i }));
@@ -72,7 +73,7 @@ describe('SessionShell', () => {
       content: 'Google feedback',
     });
     let session = createSession({ task: 'x', workflow: feynman, connection: googleConnection });
-    session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(150) }] };
+    session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(TEST_SAMPLE_LENGTH) }] };
     renderShell(session, vi.fn(), [googleConnection]);
 
     fireEvent.click(screen.getByRole('button', { name: /get ai feedback/i }));
@@ -92,7 +93,7 @@ describe('SessionShell', () => {
   it('moves to a recoverable error state and preserves the draft on provider failure', async () => {
     vi.spyOn(providerAdapter, 'requestFeedback').mockRejectedValue(new Error('boom'));
     let session = createSession({ task: 'x', workflow: feynman, connection });
-    session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(150) }] };
+    session = { ...session, currentStepIndex: 1, contributions: [{ body: 'a'.repeat(TEST_SAMPLE_LENGTH) }] };
     const onSessionChange = renderShell(session);
 
     fireEvent.click(screen.getByRole('button', { name: /get ai feedback/i }));

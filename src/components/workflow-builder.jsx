@@ -4,9 +4,7 @@ import { getBuilderNodeTypes } from '../workflows/workflow-model';
 import { validateWorkflow } from '../workflows/validate-workflow';
 import { parseWorkflowText, workflowToMarkdown } from '../utils/export-text';
 import { uid } from '../utils/uid';
-
-const MIN_CHARACTERS_FLOOR = 1;
-const MIN_CHARACTERS_CEILING = 10000;
+import { MIN_CHARACTERS_FLOOR, MIN_CHARACTERS_CEILING, DEFAULT_MIN_CHARACTERS, DEFAULT_FREEZE_SECONDS, DEFAULT_REASK_LIMIT } from '../constants';
 const ICON_MAP = {
   MessageSquare,
   UserRound,
@@ -129,7 +127,7 @@ function buildWorkflow(name, nodes, workflowId = uid()) {
     outputs,
     configuration: {
       reaskEnabled: true,
-      reaskLimit: 3,
+      reaskLimit: DEFAULT_REASK_LIMIT,
     },
   };
 }
@@ -159,7 +157,7 @@ function nodeFromStep(step) {
       ...defaults,
       title: defaults.title,
       text: step?.instruction || defaults.text,
-      minCharacters: step?.validation?.minCharacters ?? defaults.minCharacters ?? 120,
+      minCharacters: step?.validation?.minCharacters ?? defaults.minCharacters ?? DEFAULT_MIN_CHARACTERS,
     };
   }
 
@@ -170,7 +168,7 @@ function nodeFromStep(step) {
       ...defaults,
       title: step?.instruction || defaults.title,
       text: step?.configuration?.message || defaults.text,
-      durationSeconds: step?.configuration?.durationSeconds ?? defaults.durationSeconds ?? 180,
+      durationSeconds: step?.configuration?.durationSeconds ?? defaults.durationSeconds ?? DEFAULT_FREEZE_SECONDS,
     };
   }
 

@@ -1,4 +1,8 @@
 fileignoreconfig:
-- filename: src/workflows/combine-workflows.js
-  checksum: 2271df4d5967bea5371e34e24931abcd95d3d53328e6578373d0be105a246b46
+- filename: src/main.jsx
+  checksum: a3389015855438bb4afb12533c4eb694232b31840ba8a177db1b102ebc5bff66
+- filename: src/test/services/provider-adapter.test.js
+  checksum: 8b15848a2d77ad5a07e3575a8059747799c866a23cc13d91e4c5ed728960a18d
+- filename: src/services/provider-adapter.js
+  checksum: ca33cac66e08e08fbe4e66db799143d81ae76827752c36fdbd279214c633a78f
 version: ""

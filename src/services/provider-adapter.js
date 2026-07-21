@@ -7,6 +7,7 @@ import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createGoogle } from '@ai-sdk/google';
 import { getAIInstruction, getWorkflowConfiguration } from '../workflows/workflow-model';
+import { MAX_OUTPUT_TOKENS_SMALL, MAX_OUTPUT_TOKENS_DEFAULT, MAX_OUTPUT_TOKENS_GENERATE, MAX_RETRIES } from '../constants';
 
 export const PROVIDERS = [
   { id: 'openai', label: 'OpenAI', models: ['gpt-5.4-mini', 'gpt-5.4'] },
@@ -105,8 +106,8 @@ export async function suggestAdaptiveWorkflowSequence({ connection, key, task, s
         model: openai(`${connection.model}`),
         system: 'Choose a sensible sequence for the learner. Return only JSON.',
         prompt,
-        maxOutputTokens: 300,
-        maxRetries: 1,
+        maxOutputTokens: MAX_OUTPUT_TOKENS_SMALL,
+        maxRetries: MAX_RETRIES,
       });
     } else if (providerId === 'google') {
       const google = createGoogle({ apiKey: key });
@@ -114,8 +115,8 @@ export async function suggestAdaptiveWorkflowSequence({ connection, key, task, s
         model: google(`${connection.model}`),
         system: 'Choose a sensible sequence for the learner. Return only JSON.',
         prompt,
-        maxOutputTokens: 300,
-        maxRetries: 1,
+        maxOutputTokens: MAX_OUTPUT_TOKENS_SMALL,
+        maxRetries: MAX_RETRIES,
       });
     } else {
       return normalizedWorkflowIds;
@@ -144,7 +145,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
       ? `${instruction} If the learner still needs another pass, ask a short follow-up question without revealing the answer.`
       : instruction;
 
-    const maxOutputTokens = step?.activity === 'generate' ? 2000 : 500;
+    const maxOutputTokens = step?.activity === 'generate' ? MAX_OUTPUT_TOKENS_GENERATE : MAX_OUTPUT_TOKENS_DEFAULT;
 
     if (providerId === 'openai') {
       const openai = createOpenAI({ apiKey: key });
@@ -153,7 +154,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
         system: systemInstruction,
         prompt,
         maxOutputTokens,
-        maxRetries: 1,
+        maxRetries: MAX_RETRIES,
       });
     } else if (providerId === 'google') {
       const google = createGoogle({ apiKey: key });
@@ -162,7 +163,7 @@ export async function requestFeedback({ connection, key, task, workflow, step, i
         system: systemInstruction,
         prompt,
         maxOutputTokens,
-        maxRetries: 1,
+        maxRetries: MAX_RETRIES,
       });
     } else {
       throw new Error('Unsupported provider.');
